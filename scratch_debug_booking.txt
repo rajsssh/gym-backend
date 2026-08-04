@@ -1,0 +1,681 @@
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90"]
+RESULT LENGTH: 2
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90"]
+RESULT LENGTH: 2
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90"]
+RESULT LENGTH: 2
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND (ub.trainerId = ? OR c.trainerId = ? OR s.trainerId = ?) AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90","280","280","280"]
+RESULT LENGTH: 2
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND (ub.trainerId = ? OR c.trainerId = ? OR s.trainerId = ?) AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90","280","280","280"]
+RESULT LENGTH: 3
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND (ub.trainerId = ? OR c.trainerId = ? OR s.trainerId = ?) AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90","280","280","280"]
+RESULT LENGTH: 3
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND (ub.trainerId = ? OR c.trainerId = ? OR s.trainerId = ?) AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90","280","280","280"]
+RESULT LENGTH: 3
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND (ub.trainerId = ? OR c.trainerId = ? OR s.trainerId = ?) AND ub.sessionId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90","280","280","280"]
+RESULT LENGTH: 0
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND (ub.trainerId = ? OR c.trainerId = ? OR s.trainerId = ?) AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90","280","280","280"]
+RESULT LENGTH: 3
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND (ub.trainerId = ? OR c.trainerId = ? OR s.trainerId = ?) AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90","280","280","280"]
+RESULT LENGTH: 3
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND (ub.trainerId = ? OR c.trainerId = ? OR s.trainerId = ?) AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90","280","280","280"]
+RESULT LENGTH: 3
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND (ub.trainerId = ? OR c.trainerId = ? OR s.trainerId = ?) AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90","280","280","280"]
+RESULT LENGTH: 3
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND (ub.trainerId = ? OR c.trainerId = ? OR s.trainerId = ?) AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90","280","280","280"]
+RESULT LENGTH: 3
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND (ub.trainerId = ? OR c.trainerId = ? OR s.trainerId = ?) AND ub.sessionId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90","280","280","280"]
+RESULT LENGTH: 0
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND (ub.trainerId = ? OR c.trainerId = ? OR s.trainerId = ?) AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90","277","277","277"]
+RESULT LENGTH: 0
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND (ub.trainerId = ? OR c.trainerId = ? OR s.trainerId = ?) AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90","277","277","277"]
+RESULT LENGTH: 0
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND (ub.trainerId = ? OR c.trainerId = ? OR s.trainerId = ?) AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90","277","277","277"]
+RESULT LENGTH: 0
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90"]
+RESULT LENGTH: 3
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND ub.sessionId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90"]
+RESULT LENGTH: 1
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90"]
+RESULT LENGTH: 0
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND ub.sessionId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90"]
+RESULT LENGTH: 0
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+<<<<<<< HEAD
+     AND ub.sessionId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90"]
+RESULT LENGTH: 1
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90"]
+RESULT LENGTH: 3
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND (ub.trainerId = ? OR c.trainerId = ? OR s.trainerId = ?) AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90","277","277","277"]
+RESULT LENGTH: 0
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND (ub.trainerId = ? OR c.trainerId = ? OR s.trainerId = ?) AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90","277","277","277"]
+RESULT LENGTH: 0
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90"]
+RESULT LENGTH: 3
+=======
+     AND ub.classId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90"]
+RESULT LENGTH: 0
+QUERY: 
+      SELECT 
+        ub.id,
+        ub.memberId,
+        m.fullName AS memberName,
+        m.phone AS memberPhone,
+        m.email AS memberEmail,
+        ub.date,
+        ub.startTime,
+        ub.endTime,
+        ub.bookingStatus,
+        ub.createdAt,
+        ub.bookingType,
+        ub.classId,
+        c.className AS class_name,
+        ub.sessionId,
+        s.sessionName
+      FROM unified_bookings ub
+      JOIN member m ON ub.memberId = m.id
+      LEFT JOIN classschedule c ON ub.classId = c.id
+      LEFT JOIN session s ON ub.sessionId = s.id
+      WHERE (m.adminId = ? OR c.adminId = ? OR s.adminId = ?)
+     AND ub.sessionId IS NOT NULL ORDER BY ub.createdAt DESC
+PARAMS: ["90","90","90"]
+RESULT LENGTH: 0
+>>>>>>> ea71f1e1eeac3d40a6b8603f741ddae1833fde84

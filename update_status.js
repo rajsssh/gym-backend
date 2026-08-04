@@ -1,0 +1,1 @@
+import('./src/config/db.js').then(async m => { try { await m.pool.query("UPDATE session SET status = 'Upcoming' WHERE id IN (45, 46)"); console.log('Updated session status to Upcoming'); } catch (e) { console.error('DB ERROR:', e); } process.exit(0); });

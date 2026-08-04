@@ -1,0 +1,1 @@
+import dotenv from 'dotenv'; dotenv.config(); import mysql from 'mysql2/promise'; async function run() { const pool = mysql.createPool({host: 'localhost', user: 'root', password: '', database: 'gym_db'}); const [rows] = await pool.query('SELECT eventKey, channel FROM message_templates WHERE eventKey = \'MEMBER_CREATED\''); console.log(rows); process.exit(0); } run();

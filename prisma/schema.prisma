@@ -1,0 +1,1093 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model alert {
+  id        Int      @id @default(autoincrement())
+  type      String
+  message   String
+  memberId  Int?
+  staffId   Int?
+  branchId  Int
+  createdAt DateTime @default(now())
+  branch    branch   @relation(fields: [branchId], references: [id], map: "Alert_branchId_fkey")
+  member    member?  @relation(fields: [memberId], references: [id], map: "Alert_memberId_fkey")
+  user      user?    @relation(fields: [staffId], references: [id], map: "Alert_staffId_fkey")
+
+  @@index([branchId], map: "Alert_branchId_idx")
+  @@index([memberId], map: "Alert_memberId_idx")
+  @@index([staffId], map: "Alert_staffId_idx")
+}
+
+model app_settings {
+  id                Int       @id @default(autoincrement())
+  logo              String?   @db.VarChar(500)
+  gym_name          String?   @db.VarChar(255)
+  description       String?   @db.Text
+  url               String?   @db.VarChar(255)
+  memberPlanId      Int?
+  createdAt         DateTime? @default(now()) @db.DateTime(0)
+  updatedAt         DateTime? @default(now()) @db.DateTime(0)
+  adminId           Int?
+  hero_banner       String?   @db.VarChar(500)
+  hero_subtitle     String?   @db.Text
+  hero_title        String?   @db.VarChar(255)
+  services_json     String?   @db.Text
+  testimonials_json String?   @db.Text
+}
+
+model booking {
+  id            Int           @id @default(autoincrement())
+  memberId      Int
+  scheduleId    Int
+  member        member        @relation(fields: [memberId], references: [id], map: "Booking_memberId_fkey")
+  classschedule classschedule @relation(fields: [scheduleId], references: [id], map: "Booking_scheduleId_fkey")
+
+  @@index([memberId], map: "Booking_memberId_idx")
+  @@index([scheduleId], map: "Booking_scheduleId_idx")
+}
+
+model booking_requests {
+  id        Int                      @id @default(autoincrement())
+  memberId  Int?
+  planId    Int?
+  classId   Int?
+  branchId  Int?
+  adminId   Int?
+  userId    Int?
+  status    booking_requests_status? @default(pending)
+  createdAt DateTime?                @default(now()) @db.DateTime(0)
+  updatedAt DateTime?                @default(now()) @db.DateTime(0)
+  price     Decimal                  @default(0.00) @db.Decimal(10, 2)
+  upiId     String?                  @db.VarChar(100)
+}
+
+model branch {
+  id                         Int           @id @default(autoincrement())
+  name                       String
+  phone                      String?
+  createdAt                  DateTime      @default(now())
+  address                    String?
+  status                     branch_status @default(ACTIVE)
+  adminId                    Int?
+  attendanceRadiusMeters     Int           @default(50)
+  alert                      alert[]
+  user_branch_adminIdTouser  user?         @relation("branch_adminIdTouser", fields: [adminId], references: [id], onDelete: Restrict, map: "Branch_adminId_fkey")
+  expense                    expense[]
+  member                     member[]
+  plan                       plan[]
+  product                    product[]
+  session                    session[]
+  user_user_branchIdTobranch user[]        @relation("user_branchIdTobranch")
+
+  @@index([adminId], map: "Branch_adminId_fkey")
+}
+
+model classschedule {
+  id        Int       @id @default(autoincrement())
+  adminId   Int?
+  className String
+  trainerId Int
+  date      DateTime
+  startTime String
+  endTime   String
+  capacity  Int
+  members   String?   @db.LongText
+  status    String    @default("Active")
+  day       String?
+  price     Decimal?  @default(0.00) @db.Decimal(10, 2)
+  booking   booking[]
+  user      user      @relation(fields: [trainerId], references: [id], map: "ClassSchedule_trainerId_fkey")
+
+  @@index([adminId], map: "ClassSchedule_branchId_idx")
+  @@index([trainerId], map: "ClassSchedule_trainerId_idx")
+}
+
+model classtype {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+}
+
+model dietmeal {
+  id         Int      @id @default(autoincrement())
+  dietPlanId Int
+  time       String
+  food       String
+  dietplan   dietplan @relation(fields: [dietPlanId], references: [id], map: "DietMeal_dietPlanId_fkey")
+
+  @@index([dietPlanId], map: "DietMeal_dietPlanId_idx")
+}
+
+model dietplan {
+  id                 Int                  @id @default(autoincrement())
+  title              String
+  notes              String?
+  createdBy          Int
+  branchId           Int
+  createdAt          DateTime             @default(now())
+  dietType           String?              @default("Any") @db.VarChar(20)
+  dietmeal           dietmeal[]
+  dietplanassignment dietplanassignment[]
+}
+
+model dietplanassignment {
+  id         Int      @id @default(autoincrement())
+  dietPlanId Int
+  memberId   Int
+  assignedAt DateTime @default(now())
+  dietplan   dietplan @relation(fields: [dietPlanId], references: [id], map: "DietPlanAssignment_dietPlanId_fkey")
+  member     member   @relation(fields: [memberId], references: [id], map: "DietPlanAssignment_memberId_fkey")
+
+  @@index([dietPlanId], map: "DietPlanAssignment_dietPlanId_idx")
+  @@index([memberId], map: "DietPlanAssignment_memberId_idx")
+}
+
+model expense {
+  id        Int      @id @default(autoincrement())
+  title     String
+  category  String
+  amount    Float
+  date      DateTime @default(now())
+  branchId  Int
+  notes       String?
+  description String?  @db.VarChar(255)
+  paymentMode String?  @default("Cash") @db.VarChar(50)
+  createdAt   DateTime @default(now())
+  branch      branch   @relation(fields: [branchId], references: [id], map: "Expense_branchId_fkey")
+
+  @@index([branchId], map: "Expense_branchId_idx")
+}
+
+model group_class_bookings {
+  id            Int       @id @default(autoincrement())
+  memberId      Int
+  classId       Int
+  date          DateTime  @db.Date
+  startTime     DateTime  @db.Time(0)
+  endTime       DateTime  @db.Time(0)
+  bookingStatus String?   @default("Booked") @db.VarChar(20)
+  paymentStatus String?   @default("Pending") @db.VarChar(20)
+  notes         String?   @db.Text
+  branchId      Int
+  createdAt     DateTime? @default(now()) @db.DateTime(0)
+  updatedAt     DateTime? @default(now()) @db.DateTime(0)
+}
+
+model housekeepingattendance {
+  id             Int                           @id @default(autoincrement())
+  staffId        Int
+  attendanceDate DateTime                      @db.Date
+  status         housekeepingattendance_status
+  checkIn        DateTime?                     @db.Time(0)
+  checkOut       DateTime?                     @db.Time(0)
+  workHours      String?                       @db.VarChar(20)
+  notes          String?                       @db.Text
+  createdById    Int
+  createdAt      DateTime?                     @default(now()) @db.DateTime(0)
+  updatedAt      DateTime?                     @default(now()) @db.DateTime(0)
+
+  @@index([createdById], map: "createdById")
+  @@index([staffId], map: "staffId")
+}
+
+model housekeepingschedule {
+  id          Int                          @id @default(autoincrement())
+  dutyDate    DateTime                     @db.Date
+  startTime   DateTime                     @db.Time(0)
+  endTime     DateTime                     @db.Time(0)
+  location    String?                      @db.VarChar(100)
+  status      housekeepingschedule_status? @default(Pending)
+  staffId     Int
+  createdById Int
+  createdAt   DateTime?                    @default(now()) @db.DateTime(0)
+  updatedAt   DateTime?                    @default(now()) @db.DateTime(0)
+
+  @@index([createdById], map: "createdById")
+  @@index([staffId], map: "staffId")
+}
+
+model member {
+  id                          Int                           @id @default(autoincrement())
+  userId                      Int?
+  adminId                     Int
+  fullName                    String
+  email                       String?                       @unique(map: "Member_email_key")
+  phone                       String
+  gender                      String?
+  address                     String?
+  joinDate                    DateTime                      @default(now())
+  branchId                    Int?
+  membershipFrom              DateTime?
+  membershipTo                DateTime?
+  paymentMode                 String?
+  interestedIn                String?
+  amountPaid                  Float?
+  dateOfBirth                 DateTime?
+  password                    String?
+  status                      String                        @default("ACTIVE")
+  planId                      Int?
+  trainerId                   Int?
+  trainerType                 String?
+  discount                    Decimal?                      @default(0.00) @db.Decimal(10, 2)
+  goal                        String?
+  profileImage                String?                       @db.Text
+  alert                       alert[]
+  booking                     booking[]
+  dietplanassignment          dietplanassignment[]
+  branch                      branch?                       @relation(fields: [branchId], references: [id], onDelete: Restrict, map: "Member_branchId_fkey")
+  user                        user?                         @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_member_user")
+  member_assessments          member_assessments[]
+  member_bodybuilding_logs    member_bodybuilding_logs[]
+  member_health_log           member_health_log[]
+  member_plan_assignment      member_plan_assignment[]
+  membership_renewal_requests membership_renewal_requests[]
+  notificationlog             notificationlog[]
+  payment                     payment[]
+  used_qr_nonces              used_qr_nonces[]
+  workoutplanassignment       workoutplanassignment[]
+
+  @@index([branchId], map: "Member_branchId_idx")
+  @@index([userId], map: "fk_member_user")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model member_plan_assignment {
+  id                          Int                           @id @default(autoincrement())
+  memberId                    Int
+  planId                      Int
+  membershipFrom              DateTime
+  membershipTo                DateTime
+  paymentMode                 String?
+  amountPaid                  Float?
+  status                      String                        @default("Active")
+  assignedBy                  Int?
+  assignedAt                  DateTime                      @default(now())
+  createdAt                   DateTime                      @default(now())
+  updatedAt                   DateTime                      @default(now())
+  member                      member                        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberplan                  memberplan                    @relation(fields: [planId], references: [id])
+  membership_renewal_requests membership_renewal_requests[]
+
+  @@index([memberId])
+  @@index([planId])
+  @@index([status])
+}
+
+model memberattendance {
+  id        Int       @id @default(autoincrement())
+  staffId   Int?
+  memberId  Int?
+  branchId  Int?
+  checkIn   DateTime  @default(now())
+  checkOut  DateTime?
+  createdAt DateTime  @default(now())
+  notes     String?   @db.Text
+  status    String?   @db.VarChar(20)
+  mode      String?   @db.VarChar(20)
+  shiftId   Int?
+  deviceId  String?
+  ipAddress String?   @db.VarChar(45)
+  latitude  Decimal?  @db.Decimal(10, 8)
+  longitude Decimal?  @db.Decimal(11, 8)
+}
+
+model memberplan {
+  id                          Int                           @id @default(autoincrement())
+  name                        String
+  sessions                    Int
+  validityDays                Int
+  price                       Float
+  type                        String                        @default("GROUP")
+  adminId                     Int
+  branchId                    Int?
+  createdAt                   DateTime                      @default(now())
+  updatedAt                   DateTime?                     @default(now())
+  trainerId                   Int?
+  trainerType                 String?                       @db.VarChar(255)
+  status                      String?                       @db.VarChar(50)
+  taxRate                     Decimal?                      @default(0.00) @db.Decimal(5, 2)
+  member_plan_assignment      member_plan_assignment[]
+  membership_renewal_requests membership_renewal_requests[]
+
+  @@index([adminId], map: "MemberPlan_adminId_fkey")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model membership_renewal_requests {
+  id                     Int                    @id @default(autoincrement())
+  memberId               Int
+  assignmentId           Int
+  planId                 Int
+  paymentMode            String?
+  amountPaid             Float?
+  requestedBy            Int
+  requestedByRole        String?                @db.VarChar(50)
+  status                 String                 @default("pending")
+  approvedBy             Int?
+  approvedAt             DateTime?
+  rejectedAt             DateTime?
+  rejectionReason        String?                @db.Text
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @default(now())
+  member_plan_assignment member_plan_assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  member                 member                 @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberplan             memberplan             @relation(fields: [planId], references: [id])
+
+  @@index([assignmentId], map: "assignmentId")
+  @@index([memberId], map: "memberId")
+  @@index([planId], map: "planId")
+  @@index([requestedBy], map: "requestedBy")
+  @@index([status], map: "status")
+}
+
+model notificationlog {
+  id             Int      @id @default(autoincrement())
+  title          String?  @db.VarChar(255)
+  type           String
+  to             String
+  receiver_role  String?  @db.VarChar(50)
+  message        String   @db.Text
+  status         String   @default("PENDING")
+  sender_id      String?  @db.VarChar(50)
+  sender_role    String?  @db.VarChar(50)
+  reference_type String?  @db.VarChar(100)
+  reference_id   String?  @db.VarChar(100)
+  is_read        Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  memberId       Int?
+  error          String?  @db.Text
+  member         member?  @relation(fields: [memberId], references: [id], map: "NotificationLog_memberId_fkey")
+
+  @@index([memberId], map: "NotificationLog_memberId_idx")
+}
+
+model payment {
+  id               Int       @id @default(autoincrement())
+  memberId         Int
+  planId           Int?      // references memberplan.id (not plan)
+  memberplanId     Int?
+  amount           Float
+  paymentDate      DateTime  @default(now())
+  invoiceNo        String    @unique(map: "Payment_invoiceNo_key")
+  gstAmount        Float?
+  gstPercent       Float?
+  collectedByName  String?   @db.VarChar(255)
+  collectedByRole  String?   @db.VarChar(100)
+  paymentMode      String?   @default("Cash") @db.VarChar(50)
+  transactionId    String?   @db.VarChar(100)
+  paymentProofImage String?  @db.VarChar(500)
+  status           String?   @default("Approved") @db.VarChar(50)
+  rejectionRemarks String?   @db.Text
+  member           member    @relation(fields: [memberId], references: [id], map: "Payment_memberId_fkey")
+
+  @@index([memberId], map: "Payment_memberId_idx")
+  @@index([planId], map: "Payment_planId_idx")
+}
+
+model plan {
+  id           Int           @id @default(autoincrement())
+  name         String
+  duration     plan_duration
+  price        Float
+  createdAt    DateTime      @default(now())
+  category     String?
+  description  String?
+  status       String        @default("ACTIVE")
+  branchId     Int?
+  sessions     Int           @default(0)
+  validityDays Int           @default(0)
+  taxRate      Decimal?      @default(0.00) @db.Decimal(5, 2)
+  branch       branch?       @relation(fields: [branchId], references: [id], map: "Plan_branchId_fkey")
+
+  @@index([branchId], map: "Plan_branchId_idx")
+}
+
+model product {
+  id            Int             @id @default(autoincrement())
+  name          String
+  sku           String?         @unique(map: "Product_sku_key")
+  category      String?
+  sellingPrice  Float
+  costPrice     Float?
+  currentStock  Int             @default(0)
+  branchId      Int
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  branch        branch          @relation(fields: [branchId], references: [id], map: "Product_branchId_fkey")
+  stockmovement stockmovement[]
+
+  @@index([branchId], map: "Product_branchId_idx")
+}
+
+model pt_bookings {
+  id            Int       @id @default(autoincrement())
+  memberId      Int
+  trainerId     Int
+  sessionId     Int?
+  date          DateTime  @db.Date
+  startTime     DateTime  @db.Time(0)
+  endTime       DateTime  @db.Time(0)
+  bookingStatus String?   @default("Booked") @db.VarChar(20)
+  paymentStatus String?   @default("Pending") @db.VarChar(20)
+  notes         String?   @db.Text
+  branchId      Int
+  createdAt     DateTime? @default(now()) @db.DateTime(0)
+  updatedAt     DateTime? @default(now()) @db.DateTime(0)
+  session       session?  @relation(fields: [sessionId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_pt_session")
+
+  @@index([sessionId], map: "fk_pt_session")
+}
+
+model purchase {
+  id              Int      @id @default(autoincrement())
+  selectedPlan    String
+  companyName     String
+  email           String
+  billingDuration String
+  startDate       DateTime
+  purchaseDate    DateTime @default(now())
+  status          String   @default("pending")
+  amount          Decimal? @default(0.00) @db.Decimal(10, 2)
+  phone           String?  @db.VarChar(20)
+  adminName       String?
+  branchName      String?
+  gstNumber       String?
+  city            String?
+  profileImage    String?  @db.Text
+  password        String?
+  visiblePassword String?
+  paymentMethod   String?
+  paymentDetails  String?  @db.Text
+  transactionId   String?  @db.VarChar(255)
+}
+
+model role {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique(map: "Role_name_key")
+  createdAt DateTime @default(now())
+  user      user[]
+}
+
+model salary {
+  id              Int      @id @default(autoincrement())
+  salaryId        String   @unique(map: "ux_salary_salaryId") @db.VarChar(255)
+  staffId         Int
+  role            String?  @db.VarChar(255)
+  periodStart     DateTime @db.DateTime(0)
+  periodEnd       DateTime @db.DateTime(0)
+  hoursWorked     Int?     @default(0)
+  hourlyRate      Float?   @default(0)
+  hourlyTotal     Float?   @default(0)
+  fixedSalary     Float?   @default(0)
+  commissionTotal Float?   @default(0)
+  bonuses         String?  @db.LongText
+  deductions      String?  @db.LongText
+  netPay          Float
+  status          String   @default("Generated") @db.VarChar(50)
+  createdAt       DateTime @default(now()) @db.DateTime(0)
+  staff           staff    @relation(fields: [staffId], references: [id], map: "fk_salary_staff")
+
+  @@index([staffId], map: "idx_salary_staffId")
+}
+
+model session {
+  id          Int           @id @default(autoincrement())
+  adminId     Int
+  sessionName String
+  trainerId   Int
+  branchId    Int?
+  date        DateTime
+  time        String
+  duration    Int
+  capacity    Int?
+  description String?
+  status      String        @default("Upcoming")
+  createdAt   DateTime      @default(now())
+  pt_bookings pt_bookings[]
+  branch      branch?       @relation(fields: [branchId], references: [id], onDelete: Restrict, map: "Session_branchId_fkey")
+  user        user          @relation(fields: [trainerId], references: [id], map: "Session_trainerId_fkey")
+
+  @@index([branchId], map: "Session_branchId_idx")
+  @@index([trainerId], map: "Session_trainerId_idx")
+}
+
+model shifts {
+  id          Int      @id @default(autoincrement())
+  staffIds    Int?
+  branchId    Int?
+  shiftDate   DateTime @db.Date
+  startTime   DateTime @db.Time(0)
+  endTime     DateTime @db.Time(0)
+  shiftType   String   @db.VarChar(100)
+  description String?  @db.Text
+  status      String   @default("Pending") @db.VarChar(50)
+  createdById Int
+  createdAt   DateTime @default(now()) @db.Timestamp(0)
+}
+
+model staff {
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  adminId      Int?
+  branchId     Int?
+  gender       String
+  dateOfBirth  DateTime
+  joinDate     DateTime
+  exitDate     DateTime?
+  profilePhoto String?
+  status       String    @default("Active")
+  leads        leads[]
+  salary       salary[]
+}
+
+model staffattendance {
+  id        Int       @id @default(autoincrement())
+  shiftId   Int?
+  staffId   Int
+  branchId  Int
+  checkIn   DateTime  @default(now())
+  checkOut  DateTime?
+  mode      String?   @default("Manual") @db.VarChar(20)
+  status    String?   @default("Present") @db.VarChar(20)
+  notes     String?   @db.Text
+  createdAt DateTime? @default(now()) @db.Timestamp(0)
+}
+
+model stockmovement {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  type      String
+  quantity  Int
+  note      String?
+  createdAt DateTime @default(now())
+  product   product  @relation(fields: [productId], references: [id], map: "StockMovement_productId_fkey")
+
+  @@index([productId], map: "StockMovement_productId_idx")
+}
+
+model tasks {
+  id          Int      @id @default(autoincrement())
+  assignedTo  Int?
+  roleId      Int?
+  branchId    Int?
+  taskTitle   String   @db.VarChar(255)
+  description String?  @db.Text
+  dueDate     DateTime @db.Date
+  priority    String   @db.VarChar(50)
+  status      String   @default("Pending") @db.VarChar(50)
+  createdById Int
+  createdAt   DateTime @default(now()) @db.Timestamp(0)
+}
+
+model unified_bookings {
+  id            Int                          @id @default(autoincrement())
+  memberId      Int
+  trainerId     Int?
+  sessionId     Int?
+  classId       Int?
+  date          DateTime                     @db.Date
+  endDate       DateTime?                    @db.Date
+  startTime     DateTime                     @db.Time(0)
+  endTime       DateTime                     @db.Time(0)
+  bookingType   unified_bookings_bookingType
+  bookingStatus String?                      @default("Booked") @db.VarChar(50)
+  paymentStatus String?                      @default("Pending") @db.VarChar(50)
+  price         Decimal?                     @db.Decimal(10, 2)
+  notes         String?                      @db.VarChar(255)
+  branchId      Int?
+  createdAt     DateTime?                    @default(now()) @db.Timestamp(0)
+  updatedAt     DateTime?                    @default(now()) @db.Timestamp(0)
+}
+
+model user {
+  id                           Int             @id @default(autoincrement())
+  adminId                      Int?
+  fullName                     String
+  email                        String          @unique(map: "User_email_key")
+  password                     String
+  phone                        String?
+  roleId                       Int
+  branchId                     Int?
+  createdAt                    DateTime        @default(now())
+  address                      String?
+  description                  String?
+  duration                     String?
+  gymName                      String?
+  planName                     String?
+  price                        String?
+  status                       String?
+  dateOfBirth                  DateTime?       @db.Date
+  gender                       String?         @db.VarChar(50)
+  address_street               String?
+  address_city                 String?
+  address_state                String?
+  address_zip                  String?         @db.VarChar(50)
+  profileImage                 String?         @db.Text
+  gstNumber                    String?         @db.VarChar(50)
+  tax                          Decimal?        @db.Decimal(10, 2)
+  gymAddress                   String?         @db.Text
+  licenseExpiryDate            DateTime?
+  licenseKey                   String?         @db.VarChar(255)
+  whatsappPlan                 String          @default("Basic") @db.VarChar(50)
+  permissions                  String?         @db.LongText
+  visiblePassword              String?         @db.VarChar(255)
+  whatsappCredits              Int             @default(0)
+  emailCredits                 Int             @default(0)
+  isTrial                      Boolean         @default(false)
+
+  trialStartDate               DateTime?       @db.DateTime(0)
+  trialEndDate                 DateTime?       @db.DateTime(0)
+  gracePeriodEndDate           DateTime?       @db.DateTime(0)
+  subscriptionPlan             String?         @default("Basic") @db.VarChar(50)
+  trialStatus                  String?         @default("None") @db.VarChar(50)
+  tenantIntegrationSettings    tenantintegrationsettings?
+  alert                        alert[]
+  branch_branch_adminIdTouser  branch[]        @relation("branch_adminIdTouser")
+  classschedule                classschedule[]
+  leads                        leads[]
+  member                       member[]
+  saas_payments                saas_payments[]
+  session                      session[]
+  branch_user_branchIdTobranch branch?         @relation("user_branchIdTobranch", fields: [branchId], references: [id], map: "User_branchId_fkey")
+  role                         role            @relation(fields: [roleId], references: [id], map: "User_roleId_fkey")
+
+  @@index([branchId], map: "User_branchId_idx")
+  @@index([roleId], map: "User_roleId_idx")
+}
+
+model workoutexercise {
+  id            Int         @id @default(autoincrement())
+  workoutPlanId Int
+  name          String
+  sets          Int?
+  reps          Int?
+  duration      String?
+  workoutplan   workoutplan @relation(fields: [workoutPlanId], references: [id], map: "WorkoutExercise_workoutPlanId_fkey")
+
+  @@index([workoutPlanId], map: "WorkoutExercise_workoutPlanId_idx")
+}
+
+model workoutplan {
+  id                    Int                     @id @default(autoincrement())
+  title                 String
+  notes                 String?
+  createdBy             Int
+  branchId              Int
+  createdAt             DateTime                @default(now())
+  workoutexercise       workoutexercise[]
+  workoutplanassignment workoutplanassignment[]
+}
+
+model workoutplanassignment {
+  id            Int         @id @default(autoincrement())
+  workoutPlanId Int
+  memberId      Int
+  assignedAt    DateTime    @default(now())
+  member        member      @relation(fields: [memberId], references: [id], map: "WorkoutPlanAssignment_memberId_fkey")
+  workoutplan   workoutplan @relation(fields: [workoutPlanId], references: [id], map: "WorkoutPlanAssignment_workoutPlanId_fkey")
+
+  @@index([memberId], map: "WorkoutPlanAssignment_memberId_idx")
+  @@index([workoutPlanId], map: "WorkoutPlanAssignment_workoutPlanId_idx")
+}
+
+model automation_settings {
+  id                  Int     @id @default(autoincrement())
+  trialDurationDays   Int     @default(7)
+  gracePeriodDays     Int     @default(3)
+  enableEmailNotif    Boolean @default(true)
+  enableWhatsappNotif Boolean @default(false)
+  lowCreditThreshold  Int     @default(50)
+  quarterlyDiscount   Decimal @default(5.00) @db.Decimal(5, 2)
+  yearlyDiscount      Decimal @default(15.00) @db.Decimal(5, 2)
+}
+
+model message_templates {
+  id        Int      @id @default(autoincrement())
+  eventKey  String   @unique @db.VarChar(100)
+  name      String   @db.VarChar(255)
+  subject   String?  @db.VarChar(255)
+  message   String   @db.Text
+  channel   String   @default("EMAIL") @db.VarChar(100)
+  isActive  Boolean  @default(true)
+  variables Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model template_audit_logs {
+  id         Int      @id @default(autoincrement())
+  templateId Int
+  adminId    Int?
+  ipAddress  String?  @db.VarChar(45)
+  oldSubject String?  @db.VarChar(255)
+  newSubject String?  @db.VarChar(255)
+  oldMessage String?  @db.Text
+  newMessage String?  @db.Text
+  changedAt  DateTime @default(now())
+}
+
+model credit_packages {
+  id          Int       @id @default(autoincrement())
+  packageName String    @db.VarChar(255)
+  credits     Int
+  price       Decimal   @db.Decimal(10, 2)
+  isActive    Boolean?  @default(true)
+  packageType String?   @default("WHATSAPP") @db.VarChar(50)
+  createdAt   DateTime? @default(now()) @db.DateTime(0)
+}
+
+
+model leads {
+  id                Int       @id @default(autoincrement())
+  adminId           Int?
+  fullName          String
+  email             String?
+  phone             String
+  gender            String?
+  source            String    @default("Landing Page")
+  status            String    @default("New")
+  assignedToStaffId Int?
+  notes             String?   @db.Text
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  branchId          Int?
+  followUpDate      DateTime?
+  leadType          String?   @default("GYM") @db.VarChar(50)
+  interestedPlan    String?   @db.VarChar(100)
+  admin             user?     @relation(fields: [adminId], references: [id])
+  staff             staff?    @relation(fields: [assignedToStaffId], references: [id])
+
+  @@index([adminId], map: "leads_adminId_fkey")
+  @@index([assignedToStaffId], map: "leads_assignedToStaffId_fkey")
+}
+
+model member_health_log {
+  id             Int      @id @default(autoincrement())
+  memberId       Int
+  height         Decimal  @db.Decimal(5, 2)
+  weight         Decimal  @db.Decimal(5, 2)
+  bmi            Decimal  @db.Decimal(5, 2)
+  status         String
+  recordedAt     DateTime @default(now())
+  trainerId      Int?
+  neck_cm        Decimal? @db.Decimal(4, 1)
+  waist_cm       Decimal? @db.Decimal(4, 1)
+  hip_cm         Decimal? @db.Decimal(4, 1)
+  resting_hr     Int?
+  activity_level String?  @db.VarChar(50)
+  fitness_goal   String?  @db.VarChar(50)
+  notes          String?  @db.Text
+  dietChart      String?  @db.Text
+  bmiStatus      String?  @db.VarChar(255)
+  member         member   @relation(fields: [memberId], references: [id])
+
+  @@index([memberId], map: "member_health_log_memberId_fkey")
+}
+
+model used_qr_nonces {
+  id       Int      @id @default(autoincrement())
+  nonce    String   @unique
+  memberId Int
+  usedAt   DateTime @default(now())
+  member   member   @relation(fields: [memberId], references: [id])
+
+  @@index([memberId], map: "used_qr_nonces_memberId_fkey")
+}
+
+model tenantintegrationsettings {
+  id                    Int       @id @default(autoincrement())
+  tenantId              Int       @unique
+  razorpayKeyId         String?   @db.VarChar(255)
+  razorpaySecret        String?   @db.VarChar(500)
+  brevoApiKey           String?   @db.VarChar(500)
+  brevoSenderEmail      String?   @db.VarChar(255)
+  brevoSenderName       String?   @db.VarChar(255)
+  whatsappAccessToken   String?   @db.VarChar(500)
+  whatsappPhoneNumberId String?   @db.VarChar(255)
+  paymentGatewayEnabled Boolean   @default(false)
+  emailEnabled          Boolean   @default(false)
+  whatsappEnabled       Boolean   @default(false)
+  upiQrCode             String?   @db.VarChar(500)
+  upiId                 String?   @db.VarChar(255)
+  upiAccountHolder      String?   @db.VarChar(255)
+  paymentInstructions   String?   @db.Text
+  isVerified            Boolean   @default(false)
+  lastVerifiedAt        DateTime? @db.DateTime(0)
+  lastTestStatus        String?   @db.VarChar(50)
+  lastTestMessage       String?   @db.Text
+  verifiedAt            DateTime? @db.DateTime(0)
+  createdAt             DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt             DateTime  @updatedAt @db.Timestamp(0)
+  user                  user      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model saas_payments {
+  id            Int      @id @default(autoincrement())
+  adminId       Int
+  amount        Float
+  planType      String
+  paymentStatus String
+  transactionId String?
+  paymentDate   DateTime @default(now())
+  expiryDate    DateTime
+  createdAt     DateTime @default(now())
+  user          user     @relation(fields: [adminId], references: [id])
+
+  @@index([adminId], map: "saas_payments_adminId_fkey")
+}
+
+model demo_requests {
+  id        Int      @id @default(autoincrement())
+  email     String
+  phone     String
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+}
+
+model announcement {
+  id          Int      @id @default(autoincrement())
+  subject     String   @db.VarChar(255)
+  message     String   @db.Text
+  channels    String   @db.VarChar(255)
+  targetRoles String   @db.VarChar(255)
+  sentBy      Int?
+  branchId    Int?
+  adminId     Int?
+  imageUrl    String?  @db.Text
+  createdAt   DateTime @default(now()) @db.Timestamp(0)
+}
+
+model global_settings {
+  key_name   String    @id
+  value_data String    @db.Text
+  updatedAt  DateTime? @default(now()) @db.DateTime(0)
+}
+
+model landing_page_cms {
+  id               Int       @id @default(autoincrement())
+  adminId          Int
+  heroTitle        String?   @db.VarChar(255)
+  heroSubtitle     String?   @db.VarChar(255)
+  bannerUrl        String?   @db.VarChar(500)
+  featuresJson     String?   @db.Text
+  testimonialsJson String?   @db.Text
+  createdAt        DateTime? @default(now()) @db.DateTime(0)
+  updatedAt        DateTime? @default(now()) @db.DateTime(0)
+}
+
+model marketing_campaigns {
+  id              Int       @id @default(autoincrement())
+  adminId         Int
+  campaignName    String
+  templateMessage String    @db.Text
+  channel         String    @db.VarChar(50)
+  recipientCount  Int
+  status          String    @default("pending") @db.VarChar(50)
+  scheduledAt     DateTime? @db.DateTime(0)
+  createdAt       DateTime? @default(now()) @db.DateTime(0)
+}
+
+model whatsapp_credit_transactions {
+  id               Int       @id @default(autoincrement())
+  adminId          Int
+  creditsPurchased Int
+  amountPaid       Float
+  paymentStatus    String    @db.VarChar(50)
+  transactionId    String?
+  createdAt        DateTime? @default(now()) @db.DateTime(0)
+  userId           Int?
+  transactionType  String?   @db.VarChar(50)
+  description      String?   @db.VarChar(255)
+  creditsAdded     Int?      @default(0)
+  creditsUsed      Int?      @default(0)
+  packageType      String?   @default("WHATSAPP") @db.VarChar(50)
+}
+
+model member_assessments {
+  id                      Int                 @id @default(autoincrement())
+  memberId                Int
+  assessment_date         DateTime            @default(now())
+  engine_version          String              @default("1.0.0") @db.VarChar(50)
+  config_snapshot         String              @db.LongText
+  createdBy               Int
+  age_at_assessment       Int
+  gender_at_assessment    String              @db.VarChar(10)
+  weight_kg               Decimal             @db.Decimal(5, 2)
+  height_cm               Decimal             @db.Decimal(5, 2)
+  neck_cm                 Decimal             @db.Decimal(4, 1)
+  waist_cm                Decimal             @db.Decimal(4, 1)
+  hip_cm                  Decimal?            @db.Decimal(4, 1)
+  resting_hr              Int
+  activity_level          activity_level_enum
+  fitness_goal            fitness_goal_enum
+  bmi                     Decimal             @db.Decimal(5, 2)
+  body_fat_percentage     Decimal             @db.Decimal(5, 2)
+  lean_body_mass          Decimal             @db.Decimal(5, 2)
+  ideal_body_weight       Decimal             @db.Decimal(5, 2)
+  waist_to_hip_ratio      Decimal?            @db.Decimal(4, 2)
+  bmr                     Decimal             @db.Decimal(6, 2)
+  tdee                    Decimal             @db.Decimal(6, 2)
+  target_calories         Int
+  protein_grams           Int
+  fat_grams               Int
+  carb_grams              Int
+  metrics_output          String?             @db.LongText
+  createdAt               DateTime            @default(now())
+  is_baseline             Boolean?            @default(false)
+  baseline_bf_percent     Decimal?            @db.Decimal(5, 2)
+  baseline_lbm            Decimal?            @db.Decimal(5, 2)
+  demographic_multiplier  Decimal?            @db.Decimal(3, 2)
+  final_leaderboard_score Decimal?            @db.Decimal(8, 2)
+  member                  member              @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([fitness_goal, final_leaderboard_score], map: "idx_leaderboard")
+}
+
+model member_bodybuilding_logs {
+  id               Int       @id @default(autoincrement())
+  memberId         Int
+  log_date         DateTime? @default(now()) @db.DateTime(0)
+  weight_kg        Decimal?  @db.Decimal(5, 2)
+  chest_cm         Decimal?  @db.Decimal(5, 2)
+  shoulders_cm     Decimal?  @db.Decimal(5, 2)
+  left_arm_cm      Decimal?  @db.Decimal(5, 2)
+  right_arm_cm     Decimal?  @db.Decimal(5, 2)
+  left_forearm_cm  Decimal?  @db.Decimal(5, 2)
+  right_forearm_cm Decimal?  @db.Decimal(5, 2)
+  waist_cm         Decimal?  @db.Decimal(5, 2)
+  thighs_cm        Decimal?  @db.Decimal(5, 2)
+  calves_cm        Decimal?  @db.Decimal(5, 2)
+  front_photo_url  String?   @db.VarChar(255)
+  back_photo_url   String?   @db.VarChar(255)
+  side_photo_url   String?   @db.VarChar(255)
+  notes            String?   @db.Text
+  gender           String?   @db.VarChar(50)
+  age              Int?
+  height_cm        Decimal?  @db.Decimal(5, 2)
+  neck_cm          Decimal?  @db.Decimal(4, 1)
+  hip_cm           Decimal?  @db.Decimal(5, 2)
+  activity_level   String?   @db.VarChar(50)
+  fitness_goal     String?   @db.VarChar(50)
+  biceps_cm        Decimal?  @db.Decimal(5, 2)
+  forearms_cm      Decimal?  @db.Decimal(5, 2)
+  assessment_date  DateTime? @default(now()) @db.DateTime(0)
+  resting_hr       Int?
+  member           member    @relation(fields: [memberId], references: [id], onUpdate: Restrict, map: "member_bodybuilding_logs_ibfk_1")
+
+  @@index([memberId], map: "memberId")
+}
+
+enum plan_duration {
+  Monthly
+  Yearly
+  SevenDays @map("7 Days")
+}
+
+enum housekeepingattendance_status {
+  Present
+  Absent
+  Late
+}
+
+enum branch_status {
+  ACTIVE
+  INACTIVE
+}
+
+enum housekeepingschedule_status {
+  In_Progress @map("In Progress")
+  Completed
+  Pending
+}
+
+enum booking_requests_status {
+  pending
+  approved
+  rejected
+}
+
+enum unified_bookings_bookingType {
+  PT
+  GROUP
+}
+
+enum activity_level_enum {
+  sedentary
+  light
+  moderate
+  active
+}
+
+enum fitness_goal_enum {
+  fat_loss
+  maintenance
+  muscle_gain
+}
+
+model equipment_requests {
+  id           Int       @id @default(autoincrement())
+  requestedBy  Int
+  role         String    @default("MEMBER") @db.VarChar(50)
+  itemName     String    @db.VarChar(255)
+  category     String    @default("Other") @db.VarChar(100)
+  quantity     Int
+  reason       String?   @db.Text
+  branchId     Int?
+  adminId      Int?
+  imageUrl     String?   @db.VarChar(255)
+  status       String    @default("PENDING") @db.VarChar(50)
+  adminRemarks String?   @db.Text
+  createdAt    DateTime? @default(now()) @db.DateTime(0)
+  updatedAt    DateTime? @default(now()) @updatedAt @db.DateTime(0)
+}
+
+model gym_equipment {
+  id                  Int       @id @default(autoincrement())
+  name                String    @db.VarChar(255)
+  category            String?   @db.VarChar(100)
+  quantity            Int       @default(1)
+  condition           String?   @default("Good") @db.VarChar(50)
+  purchaseDate        DateTime? @db.Date
+  purchaseCost        Float?
+  location            String?   @db.VarChar(255)
+  nextMaintenanceDate DateTime? @db.Date
+  branchId            Int
+  notes               String?   @db.Text
+  imageUrl            String?   @db.VarChar(255)
+  isActive            Int       @default(1) @db.TinyInt
+  createdAt           DateTime? @default(now()) @db.DateTime(0)
+  updatedAt           DateTime? @default(now()) @updatedAt @db.DateTime(0)
+}
+
+model app_notification {
+  id            Int       @id @default(autoincrement())
+  tenantId      Int
+  senderId      Int?
+  receiverId    Int
+  receiverRole  String    @db.VarChar(50)
+  type          String    @db.VarChar(100)
+  title         String    @db.VarChar(255)
+  message       String    @db.Text
+  referenceType String?   @db.VarChar(100)
+  referenceId   String?   @db.VarChar(100)
+  actionUrl     String?   @db.VarChar(255)
+  metadata      Json?
+  isRead        Boolean   @default(false)
+  readAt        DateTime?
+  priority      String    @default("NORMAL") @db.VarChar(50)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+
+  @@index([tenantId])
+  @@index([receiverId])
+  @@index([receiverRole])
+  @@index([createdAt])
+  @@index([isRead])
+}

@@ -1,0 +1,1 @@
+import('./src/config/db.js').then(async m => { try { await m.pool.query("UPDATE user SET roleId = 2 WHERE email = 'admin@gmail.com'"); console.log('Updated admin@gmail.com to roleId 2 (Admin)'); } catch (e) { console.error('DB ERROR:', e); } process.exit(0); });

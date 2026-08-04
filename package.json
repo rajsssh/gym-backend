@@ -1,0 +1,42 @@
+{
+  "name": "gym-backend",
+  "version": "1.0.0",
+  "description": "Simple Gym backend scaffold (Express + MySQL)",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node trial_migration.js && node src/server.js",
+    "dev": "nodemon src/server.js",
+    "docs": "node generate_docs.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.8.0",
+    "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1",
+    "express-fileupload": "^1.5.2",
+    "express-list-endpoints": "^7.1.1",
+    "express-rate-limit": "^8.5.2",
+    "ioredis": "^5.8.2",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "mysql2": "^3.15.3",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^7.0.11",
+    "pdfkit": "^0.17.2",
+    "qrcode": "^1.5.4",
+    "razorpay": "^2.9.6",
+    "socket.io": "^4.8.3",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@prisma/client": "^5.22.0",
+    "nodemon": "^2.0.22",
+    "prisma": "^5.22.0"
+  }
+}
