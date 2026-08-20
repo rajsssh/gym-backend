@@ -51,6 +51,59 @@ export const verifyToken = (roles = []) => {
         throw { status: 401, message: "Session expired. Please log in again." };
       }
 
+      // ----------------------------------------------------
+      // DB-based Plan Expiry Check (Authoritative Source)
+      // ----------------------------------------------------
+      let isPlanExpired = false;
+      const originalUrl = req.originalUrl || req.url || '';
+      
+      const isWhitelisted = [
+        '/auth', '/plans', '/purchases', '/automation/settings',
+        '/payments', '/member-self/profile', '/global-settings',
+        '/members/renew', '/booking/create', '/user/'
+      ].some(path => originalUrl.includes(path));
+
+      if (decoded.roleId === 1 || decoded.roleId === 2) {
+        // SuperAdmin or Admin
+        const [adminRows] = await pool.query("SELECT status, trialStatus, licenseExpiryDate FROM user WHERE id = ?", [decoded.id]);
+        if (adminRows.length > 0) {
+          const adminData = adminRows[0];
+          const normStatus = (adminData.status || '').toLowerCase().trim();
+          if (normStatus === 'inactive' || adminData.trialStatus === 'Expired') {
+            isPlanExpired = true;
+          } else if (adminData.licenseExpiryDate) {
+            const expiry = new Date(adminData.licenseExpiryDate);
+            const now = new Date();
+            // Allow if today is exactly expiry date, block if strictly before today
+            expiry.setHours(23, 59, 59, 999);
+            if (expiry < now) {
+              isPlanExpired = true;
+            }
+          }
+        }
+      } else if (decoded.memberId) {
+        // Member
+        const [activePlans] = await pool.query(
+          `SELECT id FROM member_plan_assignment WHERE memberId = ? AND status = 'Active' AND membershipTo >= CURDATE() LIMIT 1`,
+          [decoded.memberId]
+        );
+        if (activePlans.length === 0) {
+          const [memDirect] = await pool.query(
+            `SELECT id FROM member WHERE id = ? AND (status = 'Active' OR status = 'ACTIVE' OR membershipTo >= CURDATE() OR membershipTo IS NULL) LIMIT 1`,
+            [decoded.memberId]
+          );
+          if (memDirect.length === 0) {
+            isPlanExpired = true;
+          }
+        }
+      }
+
+      req.user.isPlanExpired = isPlanExpired;
+
+      if (isPlanExpired && !isWhitelisted) {
+        throw { status: 403, message: "PLAN_EXPIRED" };
+      }
+
       next();
     } catch (err) {
       if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {

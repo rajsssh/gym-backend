@@ -327,7 +327,7 @@ export const loginUser = async ({ email, password, bypassPassword = false }) => 
   }
 
   let user = null;
-  let statusError = null;
+  let isPlanExpired = false;
 
   // Since emails can be duplicated across tenants, we must find the first one that matches the password.
   // We order by id DESC to prefer the most recently created account if passwords collide.
@@ -335,25 +335,22 @@ export const loginUser = async ({ email, password, bypassPassword = false }) => 
     const match = bypassPassword || await bcrypt.compare(password, row.password);
     if (match) {
       const normStatus = (row.status || '').toLowerCase().trim();
-      if (normStatus === 'inactive') {
-        if (row.trialStatus === 'Expired') {
-          statusError = { status: 403, message: "Your trial has expired. Please purchase a subscription to continue." };
-        } else {
-          statusError = { status: 403, message: "Your account is inactive. Please contact support." };
+      if (normStatus === 'inactive' || row.trialStatus === 'Expired') {
+        if (!user) {
+          user = row;
+          isPlanExpired = true;
         }
         continue; // Keep looking for an active account with this password
       }
       
       // Found a matching, active account
       user = row;
+      isPlanExpired = false;
       break;
     }
   }
 
   if (!user) {
-    if (statusError) {
-      throw statusError;
-    }
     throw { status: 401, message: "Invalid password or account" };
   }
 
@@ -413,14 +410,9 @@ export const loginUser = async ({ email, password, bypassPassword = false }) => 
           [member.id]
         );
 
-        throw {
-          status: 403,
-          message: "Membership expired. Please renew your plan.",
-        };
+        isPlanExpired = true;
       }
     }
-
-    // ✅ At least one active plan or direct active membership exists - member can login
   }
 
   /* ===============================
@@ -435,6 +427,7 @@ export const loginUser = async ({ email, password, bypassPassword = false }) => 
       adminId: user.adminId,
       staffId: staffId,
       memberId: memberId,   // ✅ DOMAIN ID
+      isPlanExpired: isPlanExpired
     },
     ENV.jwtSecret,
     { expiresIn: "7d" }
@@ -448,6 +441,7 @@ export const loginUser = async ({ email, password, bypassPassword = false }) => 
     user: {
       id: user.id,
       fullName: user.fullName,
+      isPlanExpired: isPlanExpired,
       email: user.email,
       phone: user.phone,
 
@@ -1132,9 +1126,6 @@ export const getAdminDashboardData = async (adminId, branchId = null, monthStr =
  FROM member 
  WHERE adminId = ?
    ${bId ? "AND branchId = ?" : ""}
-   AND membershipTo IS NOT NULL
-   AND DATE(membershipFrom) <= ?
-   AND DATEDIFF(membershipTo, ?) > 0
 ) AS totalMembers,
 
 
@@ -1295,8 +1286,6 @@ const recentActivitiesQuery = `
   const statsParams = [];
   // 1. totalMembers
   statsParams.push(adminId); if (bId) statsParams.push(bId);
-  statsParams.push(todayStr);
-  statsParams.push(todayStr);
   // 2. totalStaff
   statsParams.push(adminId); if (bId) statsParams.push(bId);
   // 3. todaysMemberCheckins

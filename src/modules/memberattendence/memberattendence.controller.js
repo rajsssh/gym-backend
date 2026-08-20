@@ -235,40 +235,7 @@ export const memberCheckIn = async (req, res, next) => {
         ipAddress || null,
       ]
     );
-    // Send check-in notification to member
-    if (isMember && memberRecords && memberRecords.length > 0) {
-      const member = memberRecords[0];
-      const checkInTime = finalCheckIn.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
-      const checkInDate = finalCheckIn.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
-      
-      let gymName = "GymSoft";
-      const tenantId = memberAdminId || member.adminId || null;
-      if (tenantId) {
-        const [adminRows] = await pool.query("SELECT gymName FROM user WHERE id = ?", [tenantId]);
-        if (adminRows.length > 0 && adminRows[0].gymName) {
-          gymName = adminRows[0].gymName;
-        }
-      }
-
-      await sendTemplatedNotification({
-        eventKey: 'MEMBER_ATTENDANCE',
-        tenantId: tenantId,
-        receiverId: member.userId,
-        receiverRole: 'Member',
-        receiverEmail: member.email,
-        receiverPhone: member.phone,
-        variables: {
-          Name: member.fullName,
-          Date: checkInDate,
-          Status: 'Checked In',
-          GymName: gymName,
-          Time: checkInTime
-        },
-        referenceType: 'ATTENDANCE',
-        referenceId: memberId.toString(),
-        actionUrl: '/member-dashboard'
-      });
-    }
+    // ✅ Member check-in notification is disabled per user request
 
     // Emit socket event to admin
     const adminToNotify = isMember ? memberAdminId : (typeof staffAdminId !== 'undefined' ? staffAdminId : null);
@@ -451,36 +418,7 @@ export const memberCheckOut = async (req, res, next) => {
               [record.memberId]
             );
             
-            if (memberRows.length > 0) {
-              const member = memberRows[0];
-              const checkOutTime = finalCheckOut.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
-              const checkOutDate = finalCheckOut.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
-              
-              let gymName = "GymSoft";
-              const [adminRows] = await pool.query("SELECT gymName FROM user WHERE id = ?", [adminId]);
-              if (adminRows.length > 0 && adminRows[0].gymName) {
-                gymName = adminRows[0].gymName;
-              }
-
-              await sendTemplatedNotification({
-                eventKey: 'MEMBER_ATTENDANCE',
-                tenantId: adminId,
-                receiverId: member.userId,
-                receiverRole: 'Member',
-                receiverEmail: member.email,
-                receiverPhone: member.phone,
-                variables: {
-                  Name: member.fullName,
-                  Date: checkOutDate,
-                  Status: 'Checked Out',
-                  GymName: gymName,
-                  Time: checkOutTime
-                },
-                referenceType: 'ATTENDANCE',
-                referenceId: record.memberId.toString(),
-                actionUrl: '/member-dashboard'
-              });
-            }
+            // ✅ Member checkout notification is disabled per user request
           }
 
           // Also notify Admin & Staff Dashboards

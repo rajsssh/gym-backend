@@ -152,6 +152,30 @@ export const createPurchase = async (req, res) => {
       }
     }
 
+    const isTrialPlan = data.selectedPlan && data.selectedPlan.toLowerCase().includes("trial");
+    
+    // Check historical purchases to prevent multiple free trials
+    if (isTrialPlan && data.email) {
+      const [pastTrials] = await pool.query(
+        "SELECT id FROM purchases WHERE email = ? AND selectedPlan LIKE '%trial%' LIMIT 1",
+        [data.email]
+      );
+      if (pastTrials.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: "You have already used a free trial. Please purchase a paid subscription to continue."
+        });
+      }
+      
+      const [userRec] = await pool.query("SELECT trialStatus FROM user WHERE email = ? LIMIT 1", [data.email]);
+      if (userRec.length > 0 && userRec[0].trialStatus === 'Expired') {
+        return res.status(400).json({
+          success: false,
+          message: "Your free trial has expired. Please purchase a paid subscription to continue."
+        });
+      }
+    }
+
     // Upload profile image if uploaded from landing page
     let imageUrl = null;
     if (req.files?.profileImage) {
@@ -166,7 +190,6 @@ export const createPurchase = async (req, res) => {
     const purchase = await createPurchaseService(data);
 
     // If it is a Free Trial, DO NOT auto-approve. Leave as pending for SuperAdmin to review.
-    const isTrialPlan = data.selectedPlan && data.selectedPlan.toLowerCase().includes("trial");
     if (isTrialPlan) {
       try {
         await pool.query(
