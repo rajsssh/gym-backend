@@ -20,19 +20,20 @@ export const createLog = async (req, res) => {
       return res.status(404).json({ status: false, message: 'Member not found' });
     }
 
+    // Force goal to EXACTLY match member.goal (do not fallback to interestedIn as requested by user)
     let actualGoal = req.body.fitness_goal;
-    const memberGoal = (member.goal || member.interestedIn || "").toLowerCase();
-    if (memberGoal) {
-      if (memberGoal.includes("body building") || memberGoal.includes("bodybuilding") || memberGoal.includes("bodybuilder")) {
+    const canonicalGoal = (member.goal || "").toLowerCase();
+    if (canonicalGoal) {
+      if (canonicalGoal.includes("body building") || canonicalGoal.includes("bodybuilding") || canonicalGoal.includes("bodybuilder")) {
         actualGoal = "Body Builder";
-      } else if (memberGoal.includes("weight gain") || memberGoal.includes("muscle")) {
+      } else if (canonicalGoal.includes("weight gain") || canonicalGoal.includes("muscle")) {
         actualGoal = "Muscle Gain";
-      } else if (memberGoal.includes("fat loss") || memberGoal.includes("weight loss")) {
+      } else if (canonicalGoal.includes("fat loss") || canonicalGoal.includes("weight loss")) {
         actualGoal = "Fat Loss";
-      } else if (memberGoal.includes("strength") || memberGoal.includes("maintenance")) {
+      } else if (canonicalGoal.includes("strength") || canonicalGoal.includes("maintenance")) {
         actualGoal = "Maintenance";
       } else {
-        actualGoal = member.goal || member.interestedIn;
+        actualGoal = member.goal;
       }
     }
 
@@ -61,7 +62,7 @@ export const createLog = async (req, res) => {
     
     // Dispatch notifications
     try {
-      const [[admin]] = await pool.query("SELECT gymName FROM user WHERE id = ?", [member.adminId]);
+      const [[admin]] = await pool.query("SELECT id, gymName, email, phone FROM user WHERE id = ?", [member.adminId]);
       const gymName = admin?.gymName || "Our Gym";
 
       // Notify Member
@@ -84,8 +85,8 @@ export const createLog = async (req, res) => {
       }
 
       // Notify Trainer
+      let trainerUser = null;
       if (member.trainerId) {
-        let trainerUser = null;
         const [[trainerAsUser]] = await pool.query("SELECT id, fullName, email, phone FROM user WHERE id = ?", [member.trainerId]);
         if (trainerAsUser) {
           trainerUser = trainerAsUser;
@@ -115,6 +116,25 @@ export const createLog = async (req, res) => {
             actionUrl: '/clients'
           }).catch(err => console.error("Error sending CLIENT_PROGRESS_UPDATED to trainer:", err.message));
         }
+      }
+
+      // Notify Admin
+      if (admin && admin.id) {
+        await sendTemplatedNotification({
+          eventKey: 'ADMIN_PROGRESS_UPDATED',
+          tenantId: member.adminId,
+          receiverId: admin.id,
+          receiverRole: 'Admin',
+          receiverEmail: admin.email,
+          receiverPhone: admin.phone,
+          variables: {
+            MemberName: member.fullName,
+            GymName: gymName
+          },
+          referenceType: 'BODYBUILDING_LOG',
+          referenceId: newLog.id.toString(),
+          actionUrl: '/member'
+        }).catch(err => console.error("Error sending ADMIN_PROGRESS_UPDATED to admin:", err.message));
       }
     } catch (notifErr) {
       console.error("Error dispatching bodybuilding notifications:", notifErr.message);

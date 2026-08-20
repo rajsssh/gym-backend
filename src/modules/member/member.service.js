@@ -1990,7 +1990,7 @@ export const assignTrainerToMemberService = async ({ memberId, trainerId, traine
   try {
     const [[member]] = await pool.query("SELECT * FROM member WHERE id = ?", [memberId]);
     if (member) {
-      const [[admin]] = await pool.query("SELECT gymName FROM user WHERE id = ?", [member.adminId]);
+      const [[admin]] = await pool.query("SELECT id, gymName, email, phone FROM user WHERE id = ?", [member.adminId]);
       const gymName = admin?.gymName || "Our Gym";
 
       let trainerUser = null;
@@ -2040,6 +2040,25 @@ export const assignTrainerToMemberService = async ({ memberId, trainerId, traine
             referenceId: trainerId.toString(),
             actionUrl: '/member-dashboard'
           }).catch(err => console.error("Error sending MEMBER_ASSIGNED_TO_TRAINER notification:", err.message));
+        }
+
+        if (admin && admin.id) {
+          await sendTemplatedNotification({
+            eventKey: 'ADMIN_TRAINER_ASSIGNED',
+            tenantId: member.adminId,
+            receiverId: admin.id,
+            receiverRole: 'Admin',
+            receiverEmail: admin.email,
+            receiverPhone: admin.phone,
+            variables: {
+              TrainerName: trainerUser.fullName,
+              MemberName: member.fullName,
+              GymName: gymName
+            },
+            referenceType: 'TRAINER_ASSIGNMENT',
+            referenceId: memberId.toString(),
+            actionUrl: '/members'
+          }).catch(err => console.error("Error sending ADMIN_TRAINER_ASSIGNED notification:", err.message));
         }
       }
     }
