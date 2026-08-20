@@ -1987,5 +1987,65 @@ export const assignTrainerToMemberService = async ({ memberId, trainerId, traine
     throw { status: 404, message: "Member not found" };
   }
   
+  try {
+    const [[member]] = await pool.query("SELECT * FROM member WHERE id = ?", [memberId]);
+    if (member) {
+      const [[admin]] = await pool.query("SELECT gymName FROM user WHERE id = ?", [member.adminId]);
+      const gymName = admin?.gymName || "Our Gym";
+
+      let trainerUser = null;
+      const [[trainerAsUser]] = await pool.query("SELECT id, fullName, email, phone FROM user WHERE id = ?", [trainerId]);
+      if (trainerAsUser) {
+        trainerUser = trainerAsUser;
+      } else {
+        const [[staff]] = await pool.query("SELECT userId FROM staff WHERE id = ?", [trainerId]);
+        if (staff) {
+          const [[staffUser]] = await pool.query("SELECT id, fullName, email, phone FROM user WHERE id = ?", [staff.userId]);
+          trainerUser = staffUser;
+        }
+      }
+
+      if (trainerUser) {
+        await sendTemplatedNotification({
+          eventKey: 'TRAINER_ASSIGNED',
+          tenantId: member.adminId,
+          receiverId: trainerUser.id,
+          receiverRole: 'Trainer',
+          receiverEmail: trainerUser.email,
+          receiverPhone: trainerUser.phone,
+          variables: {
+            TrainerName: trainerUser.fullName,
+            MemberName: member.fullName,
+            GymName: gymName
+          },
+          referenceType: 'MEMBER',
+          referenceId: memberId.toString(),
+          actionUrl: '/members'
+        }).catch(err => console.error("Error sending TRAINER_ASSIGNED notification:", err.message));
+
+        if (member.userId) {
+          await sendTemplatedNotification({
+            eventKey: 'MEMBER_ASSIGNED_TO_TRAINER',
+            tenantId: member.adminId,
+            receiverId: member.userId,
+            receiverRole: 'Member',
+            receiverEmail: member.email,
+            receiverPhone: member.phone,
+            variables: {
+              MemberName: member.fullName,
+              TrainerName: trainerUser.fullName,
+              GymName: gymName
+            },
+            referenceType: 'TRAINER',
+            referenceId: trainerId.toString(),
+            actionUrl: '/member-dashboard'
+          }).catch(err => console.error("Error sending MEMBER_ASSIGNED_TO_TRAINER notification:", err.message));
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Error processing notifications in assignTrainerToMemberService:", err.message);
+  }
+
   return { memberId, trainerId, trainerType };
 };
