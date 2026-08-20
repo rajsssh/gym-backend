@@ -3,7 +3,7 @@ import axios from 'axios';
 import bcrypt from 'bcryptjs';
 
 const DB_URL = "mysql://root:wxFBsiBhfKYbDBEIhOeVugzCRKqMJyNw@sakura.proxy.rlwy.net:21149/railway";
-const API_URL = "https://gym-backend-production-abef.up.railway.app/api";
+const API_URL = "http://localhost:4000/api";
 const PASSWORD = "123456";
 
 const timestamp = Date.now();

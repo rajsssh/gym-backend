@@ -142,6 +142,7 @@ export const login = async (req, res, next) => {
         adminId: user.adminId,
         staffId: user.staffId,
         memberId: user.memberId,   // ✅ ADD THIS LINE
+        isPlanExpired: user.isPlanExpired,
 
         razorpayKeyId: user.razorpayKeyId,
 

@@ -247,13 +247,13 @@ export const memberCheckIn = async (req, res, next) => {
         branchId: userBranchId
       });
 
-      // Send app notification to admin and their staff
+      // Send app notification to admin and their staff (async)
       const attName = isMember ? memberRecords[0].fullName : (typeof userRecords !== 'undefined' ? userRecords[0].fullName : "User");
       const checkInTime = finalCheckIn.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
-      await notifyAdminAndStaff(adminToNotify, `${attName} has checked in at ${checkInTime}.`, {
+      notifyAdminAndStaff(adminToNotify, `${attName} has checked in at ${checkInTime}.`, {
         title: "New Check-In",
         reference_type: "ATTENDANCE"
-      });
+      }).catch(err => console.error("Async notification failed:", err));
     }
 
 
@@ -424,10 +424,10 @@ export const memberCheckOut = async (req, res, next) => {
           // Also notify Admin & Staff Dashboards
           const memberName = record.memberId ? (memberRows?.[0]?.fullName || "Member") : "Staff";
           const checkOutTime = finalCheckOut.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
-          await notifyAdminAndStaff(adminId, `${memberName} has checked out at ${checkOutTime}.`, {
+          notifyAdminAndStaff(adminId, `${memberName} has checked out at ${checkOutTime}.`, {
             title: "New Check-Out",
             reference_type: "ATTENDANCE"
-          });
+          }).catch(err => console.error("Async checkout notification failed", err));
 
         } catch (notifErr) {
           console.error("Failed to send checkout notification:", notifErr);
