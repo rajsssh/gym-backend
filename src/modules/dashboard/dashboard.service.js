@@ -32,7 +32,7 @@ export const dashboardService = async () => {
 
   // --- Check-ins This Month ---
   const [[checkInsRow]] = await conn.query(
-    "SELECT COUNT(*) AS count FROM memberAttendance WHERE checkIn >= ?",
+    "SELECT COUNT(*) AS count FROM memberattendance WHERE checkIn >= ?",
     [monthStartStr]
   );
   const checkIns = Number(checkInsRow.count);
