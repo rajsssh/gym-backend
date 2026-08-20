@@ -44,9 +44,9 @@ export const addHealthLogService = async (data) => {
   const { bmi, bmiStatus } = calculateBMI(weight, height);
 
   const [result] = await pool.query(
-    `INSERT INTO member_health_log (memberId, trainerId, weight, height, bmi, bmiStatus, notes, dietChart, recordedAt)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-    [memberId, trainerId || null, weight || null, height || null, bmi, bmiStatus, notes || null, dietChart || null]
+    `INSERT INTO member_health_log (memberId, trainerId, weight, height, bmi, bmiStatus, status, notes, dietChart, recordedAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+    [memberId, trainerId || null, weight || null, height || null, bmi, bmiStatus, bmiStatus, notes || null, dietChart || null]
   );
 
   // Fetch member info
