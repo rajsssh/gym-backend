@@ -157,7 +157,7 @@ export const createPurchase = async (req, res) => {
     // Check historical purchases to prevent multiple free trials
     if (isTrialPlan && data.email) {
       const [pastTrials] = await pool.query(
-        "SELECT id FROM purchases WHERE email = ? AND selectedPlan LIKE '%trial%' LIMIT 1",
+        "SELECT id FROM purchase WHERE email = ? AND selectedPlan LIKE '%trial%' LIMIT 1",
         [data.email]
       );
       if (pastTrials.length > 0) {
