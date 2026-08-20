@@ -189,68 +189,72 @@ export const createPurchase = async (req, res) => {
 
     const purchase = await createPurchaseService(data);
 
-    // If it is a Free Trial, DO NOT auto-approve. Leave as pending for SuperAdmin to review.
-    if (isTrialPlan) {
+    if (!data.isUpgrade) {
+      // Direct Purchase from Landing Page: Auto-Approve Free Trials & Direct Purchases
+      const reqMock = { params: { id: purchase.id }, body: { status: "APPROVED" } };
+      let successData = purchase;
+      const resMock = {
+        json: (resData) => { successData = resData; },
+        status: (code) => resMock
+      };
+      
       try {
-        await pool.query(
-          "UPDATE leads SET status = 'In Progress' WHERE email = ? AND leadType = 'SAAS'",
-          [data.email]
-        );
-      } catch (leadErr) {
-        console.error("Failed to update lead status:", leadErr);
+        await updatePurchaseStatus(reqMock, resMock, (err) => { throw err; });
+        return res.status(201).json({
+          success: true,
+          message: "Purchase successful and plan activated!",
+          data: successData.purchase || successData,
+          autoActivated: true
+        });
+      } catch (autoApproveErr) {
+        console.error("Auto-approve failed:", autoApproveErr);
+        return res.status(500).json({ success: false, message: "Auto-approval failed: " + autoApproveErr.message });
       }
-    }
-
-    // Fetch Super Admin details for manual paid plan / free trial request notification
-    try {
-      const [superAdmins] = await pool.query(
-        "SELECT id, email, phone FROM user WHERE roleId = 1 LIMIT 1"
-      );
-
-      let currentPlanStr = "Current Plan";
-      if (data.isUpgrade && data.email) {
+    } else {
+      // Purchase from Admin Dashboard: Leave as Pending and Notify Super Admin
+      try {
+        const [superAdmins] = await pool.query("SELECT id, email, phone FROM user WHERE roleId = 1 LIMIT 1");
+        
+        let currentPlanStr = "Current Plan";
         const [existing] = await pool.query("SELECT planName FROM user WHERE email = ? LIMIT 1", [data.email]);
         if (existing.length > 0 && existing[0].planName) {
           currentPlanStr = existing[0].planName;
         }
+
+        if (superAdmins && superAdmins.length > 0) {
+          const superAdmin = superAdmins[0];
+          const dateStr = purchase.startDate ? new Date(purchase.startDate).toLocaleDateString('en-GB') : "N/A";
+          
+          await sendTemplatedNotification({
+            eventKey: 'PLAN_UPGRADE_REQUEST',
+            tenantId: superAdmin.id,
+            receiverId: superAdmin.id,
+            receiverRole: 'Superadmin',
+            receiverEmail: superAdmin.email,
+            receiverPhone: superAdmin.phone,
+            variables: {
+              AdminName: purchase.adminName || purchase.fullName || purchase.companyName || "Admin",
+              GymName: purchase.companyName || purchase.branchName || "Gym",
+              CurrentPlan: currentPlanStr,
+              RequestedPlan: purchase.selectedPlan || "N/A",
+              DateTime: dateStr
+            },
+            referenceType: 'SUBSCRIPTION',
+            referenceId: purchase.id?.toString(),
+            actionUrl: '/admin/subscription'
+          });
+        }
+      } catch (notifErr) {
+        console.error("Failed to send notification to Super Admin:", notifErr);
       }
 
-      if (superAdmins && superAdmins.length > 0) {
-        const superAdmin = superAdmins[0];
-        const dateStr = purchase.startDate ? new Date(purchase.startDate).toLocaleDateString('en-GB') : "N/A";
-        
-        await sendTemplatedNotification({
-          eventKey: data.isUpgrade ? 'PLAN_UPGRADE_REQUEST' : 'PLAN_PURCHASED',
-          tenantId: superAdmin.id,
-          receiverId: superAdmin.id,
-          receiverRole: 'Superadmin',
-          receiverEmail: superAdmin.email,
-          receiverPhone: superAdmin.phone,
-          variables: data.isUpgrade ? {
-            AdminName: purchase.adminName || purchase.fullName || purchase.companyName || "Admin",
-            GymName: purchase.companyName || purchase.branchName || "Gym",
-            CurrentPlan: currentPlanStr,
-            RequestedPlan: purchase.selectedPlan || "N/A",
-            DateTime: dateStr
-          } : {
-            Name: purchase.adminName || purchase.fullName || purchase.companyName || "Admin",
-            PlanName: purchase.selectedPlan || "N/A"
-          },
-          referenceType: 'SUBSCRIPTION',
-          referenceId: purchase.id?.toString(),
-          actionUrl: '/admin/subscription'
-        });
-      }
-    } catch (notifErr) {
-      console.error("Failed to send notification to Super Admin:", notifErr);
+      return res.status(201).json({
+        success: true,
+        message: "Purchase request submitted successfully. Waiting for admin approval.",
+        data: purchase,
+        autoActivated: false
+      });
     }
-
-    return res.status(201).json({
-      success: true,
-      message: "Purchase request submitted successfully. Waiting for admin approval.",
-      data: purchase,
-      autoActivated: false
-    });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
