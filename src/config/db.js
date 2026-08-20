@@ -172,7 +172,9 @@ async function runStartupMigrations() {
       { key: 'DIET_PLAN_ASSIGNED', name: 'Diet Plan Assigned', subject: 'New Diet Plan - {GymName}', message: 'Hi {Name},\\n\\nA new diet plan has been assigned to you at {GymName}.\\n\\nDiet Details:\\n{DietDetails}\\n\\nTrainer: {TrainerName}\\n\\nPlease check your dashboard for more details.', vars: '["Name", "GymName", "DietDetails", "TrainerName"]' },
       { key: 'WORKOUT_PLAN_ASSIGNED', name: 'Workout Plan Assigned', subject: 'New Workout Plan - {GymName}', message: 'Hi {Name},\\n\\nA new workout plan has been assigned to you at {GymName}.\\n\\nWorkout Details:\\n{WorkoutDetails}\\n\\nTrainer: {TrainerName}\\n\\nPlease check your dashboard for more details.', vars: '["Name", "GymName", "WorkoutDetails", "TrainerName"]' },
       { key: 'HEALTH_LOG_ADDED', name: 'Health Log Added', subject: 'Health Log Updated', message: 'Hi {Name}, a new health log entry has been added to your profile.', vars: '["Name"]' },
-      { key: 'CLASS_BOOKED', name: 'Class Booked', subject: 'Class Booking Confirmed', message: 'Hi {Name}, your booking for the class {ClassName} is confirmed for {Date}.', vars: '["Name", "ClassName", "Date"]' }
+      { key: 'CLASS_BOOKED', name: 'Class Booked', subject: 'Class Booking Confirmed', message: 'Hi {Name}, your booking for the class {ClassName} is confirmed for {Date}.', vars: '["Name", "ClassName", "Date"]' },
+      { key: 'TRAINER_ASSIGNED', name: 'Trainer Assigned', subject: 'New Member Assigned - {GymName}', message: 'Hi {TrainerName},\n\nA new member {MemberName} has been assigned to you at {GymName}.\n\nPlease check your dashboard to view their details.', vars: '["TrainerName", "MemberName", "GymName"]' },
+      { key: 'MEMBER_ASSIGNED_TO_TRAINER', name: 'Trainer Assigned to You', subject: 'Your Trainer at {GymName}', message: 'Hi {MemberName},\n\nWe have assigned a trainer for you at {GymName}.\n\nYour Trainer: {TrainerName}\n\nPlease check your dashboard to view trainer details.', vars: '["MemberName", "TrainerName", "GymName"]' }
     ];
 
     for (const t of defaultTemplates) {
@@ -189,7 +191,7 @@ async function runStartupMigrations() {
       WHERE eventKey IN (
         'PLAN_UPGRADE_REQUEST', 'PLAN_UPGRADED', 'SUBSCRIPTION_ACTIVATED', 'ANNOUNCEMENT', 'PLAN_PURCHASED',
         'MEMBER_CREATED', 'MEMBER_PLAN_ASSIGNED', 'MEMBER_ATTENDANCE', 'DIET_PLAN_ASSIGNED', 'WORKOUT_PLAN_ASSIGNED',
-        'HEALTH_LOG_ADDED', 'CLASS_BOOKED', 'CLASS_CREATED', 'SESSION_CREATED'
+        'HEALTH_LOG_ADDED', 'CLASS_BOOKED', 'CLASS_CREATED', 'SESSION_CREATED', 'TRAINER_ASSIGNED', 'MEMBER_ASSIGNED_TO_TRAINER'
       )
     `);
 
@@ -197,7 +199,8 @@ async function runStartupMigrations() {
     const templatesToForceUpdate = [
       'PLAN_UPGRADE_REQUEST', 'PLAN_PURCHASED', 'PLAN_UPGRADED', 'SUBSCRIPTION_ACTIVATED',
       'NEW_ADMIN_REQUEST', 'ADMIN_REQUEST_APPROVED', 'MEMBER_ADDED', 'MEMBER_ATTENDANCE',
-      'DIET_PLAN_ASSIGNED', 'WORKOUT_PLAN_ASSIGNED', 'HEALTH_LOG_ADDED', 'CLASS_BOOKED'
+      'DIET_PLAN_ASSIGNED', 'WORKOUT_PLAN_ASSIGNED', 'HEALTH_LOG_ADDED', 'CLASS_BOOKED',
+      'TRAINER_ASSIGNED', 'MEMBER_ASSIGNED_TO_TRAINER'
     ];
     for (const eventKey of templatesToForceUpdate) {
       const tmpl = defaultTemplates.find(t => t.key === eventKey);
