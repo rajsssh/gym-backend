@@ -1125,14 +1125,12 @@ export const getAdminDashboardData = async (adminId, branchId = null, monthStr =
      (SELECT COUNT(*) 
  FROM member 
  WHERE adminId = ?
-   ${bId ? "AND branchId = ?" : ""}
 ) AS totalMembers,
 
 
       -- Staff count
       (SELECT COUNT(*) FROM staff 
         WHERE status = 'Active' AND adminId = ?
-        ${bId ? "AND branchId = ?" : ""}
         ) AS totalStaff,
 
       -- Today's Member Check-ins (JOIN member → user → adminId)
@@ -1142,6 +1140,15 @@ export const getAdminDashboardData = async (adminId, branchId = null, monthStr =
         ${bId ? "AND m.branchId = ?" : ""}
         AND DATE(CONVERT_TZ(ma.checkIn, '+00:00', '+05:30')) = ?
       ) AS todaysMemberCheckins,
+
+      -- Today's Member Check-outs
+      (SELECT COUNT(*) FROM memberattendance ma
+        JOIN member m ON ma.memberId = m.id
+        WHERE m.adminId = ?
+        ${bId ? "AND m.branchId = ?" : ""}
+        AND ma.checkOut IS NOT NULL
+        AND DATE(CONVERT_TZ(ma.checkOut, '+00:00', '+05:30')) = ?
+      ) AS todaysMemberCheckouts,
 
       -- Today's Staff Check-ins (JOIN staff → adminId)
       (SELECT COUNT(*) 
@@ -1312,13 +1319,16 @@ const recentActivitiesQuery = `
 
   const statsParams = [];
   // 1. totalMembers
-  statsParams.push(adminId); if (bId) statsParams.push(bId);
+  statsParams.push(adminId);
   // 2. totalStaff
-  statsParams.push(adminId); if (bId) statsParams.push(bId);
+  statsParams.push(adminId);
   // 3. todaysMemberCheckins
   statsParams.push(adminId); if (bId) statsParams.push(bId);
   statsParams.push(todayStr);
-  // 4. todaysStaffCheckins
+  // 4. todaysMemberCheckouts
+  statsParams.push(adminId); if (bId) statsParams.push(bId);
+  statsParams.push(todayStr);
+  // 5. todaysStaffCheckins
   statsParams.push(adminId); if (bId) statsParams.push(bId);
   statsParams.push(todayStr);
 
