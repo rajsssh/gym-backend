@@ -1145,11 +1145,11 @@ export const getAdminDashboardData = async (adminId, branchId = null, monthStr =
 
       -- Today's Staff Check-ins (JOIN staff → adminId)
       (SELECT COUNT(*) 
-        FROM memberattendance ma
-        JOIN staff s ON ma.memberId = s.userId
+        FROM staffattendance sa
+        JOIN staff s ON sa.staffId = s.id
         WHERE s.adminId = ?
         ${bId ? "AND s.branchId = ?" : ""}
-        AND DATE(CONVERT_TZ(ma.checkIn, '+00:00', '+05:30')) = ?
+        AND DATE(CONVERT_TZ(sa.checkIn, '+00:00', '+05:30')) = ?
       ) AS todaysStaffCheckins
   `;
 
@@ -1204,8 +1204,35 @@ const recentActivitiesQuery = `
     ${bId ? "AND s.branchId = ?" : ""}
   )
 
+  UNION ALL
+
+  (
+    SELECT 
+      CONCAT('Member check-in: ', m.fullName) AS activity,
+      ma.checkIn AS time,
+      'member_checkin' AS type
+    FROM memberattendance ma
+    JOIN member m ON ma.memberId = m.id
+    WHERE m.adminId = ?
+    ${bId ? "AND m.branchId = ?" : ""}
+  )
+
+  UNION ALL
+
+  (
+    SELECT 
+      CONCAT('Member check-out: ', m.fullName) AS activity,
+      ma.checkOut AS time,
+      'member_checkout' AS type
+    FROM memberattendance ma
+    JOIN member m ON ma.memberId = m.id
+    WHERE m.adminId = ?
+    ${bId ? "AND m.branchId = ?" : ""}
+    AND ma.checkOut IS NOT NULL
+  )
+
   ORDER BY time DESC
-  LIMIT 5;
+  LIMIT 15;
   `;
 
   // REVENUE GROWTH (Admin-wise)
@@ -1303,9 +1330,11 @@ const recentActivitiesQuery = `
   const [memberGrowth] = await pool.query(memberGrowthQuery, growthParams);
 
   const recentParams = [];
-  recentParams.push(adminId); if (bId) recentParams.push(bId);
+  recentParams.push(adminId); if (bId) recentParams.push(bId); // members
   recentParams.push(adminId); // booking_requests
-  recentParams.push(adminId); if (bId) recentParams.push(bId);
+  recentParams.push(adminId); if (bId) recentParams.push(bId); // staff checkin
+  recentParams.push(adminId); if (bId) recentParams.push(bId); // member checkin
+  recentParams.push(adminId); if (bId) recentParams.push(bId); // member checkout
 
   const [recentActivities] = await pool.query(recentActivitiesQuery, recentParams);
 
