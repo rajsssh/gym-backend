@@ -223,6 +223,8 @@ export const createMemberService = async (data) => {
           planName: plan.name,
           membershipFrom: planStartDate,
           membershipTo: planEndDate,
+          price: amountPerPlan || plan.price,
+          paymentMode: paymentMode || 'Cash',
         });
 
         // ✅ Also record this in the payment table for revenue tracking
@@ -324,6 +326,8 @@ export const createMemberService = async (data) => {
           PlanName: p.planName,
           GymName: gymName,
           Validity: expiryDateFormatted,
+          Price: p.price,
+          PaymentMode: p.paymentMode,
           DateTime: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
         },
         referenceType: 'MEMBERSHIP',
