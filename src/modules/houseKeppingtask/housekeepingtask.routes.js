@@ -15,7 +15,7 @@ import {
 
 const router = express.Router();
 
-router.post("/create", verifyToken(["Superadmin", "Admin", "Subadmin", "Manager"]), createTask);
+router.post("/create", verifyToken(["Superadmin", "Admin", "Subadmin", "Manager", "Receptionist"]), createTask);
 router.get("/all", verifyToken(["Superadmin", "Admin", "Subadmin", "Manager"]), getAllTasks);
 router.get("/:id", verifyToken(["Superadmin", "Admin", "Subadmin", "Manager", "Staff", "GeneralTrainer", "PersonalTrainer", "Receptionist", "SalesAgent"]), getTaskById);
 router.get("/branch/:branchId", verifyToken(["Superadmin", "Admin", "Subadmin", "Manager"]), getTaskByBranchID);
