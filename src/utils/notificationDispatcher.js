@@ -169,7 +169,10 @@ export const dispatchNotification = async ({
       let brevoApiKey = null;
       let mailFrom = null;
 
-      if (isTenantContext && tenantBrevoCreds) {
+      if (isTenantContext) {
+        if (!tenantBrevoCreds) {
+          throw new Error("Tenant email service is not configured. Please configure Brevo in Settings.");
+        }
         brevoApiKey = tenantBrevoCreds.apiKey;
         mailFrom = `${tenantBrevoCreds.senderName} <${tenantBrevoCreds.senderEmail}>`;
       } else {

@@ -3,6 +3,7 @@ import { dispatchNotification } from "../../utils/notificationDispatcher.js";
 import { createAppNotification } from "../appNotifications/appNotification.service.js";
 import { sendTemplatedNotification } from "../messageTemplates/messageTemplate.service.js";
 import { emitToUser } from "../../config/socket.js";
+import { BrevoCredentialResolver } from "../../utils/credentialResolvers.js";
 
 /**
  * Build a styled HTML email body
@@ -124,18 +125,43 @@ export const sendNotificationService = async ({ type, to, message, memberId, sub
       }
 
       // Guard: if API Key is not configured, skip gracefully
-      const brevoApiKey = process.env.BREVO_API_KEY;
+      let adminId = tenantId;
+      if (!adminId && validMemberId) {
+        const [memRows] = await pool.query("SELECT adminId FROM member WHERE id = ?", [validMemberId]);
+        if (memRows.length > 0) adminId = memRows[0].adminId;
+      }
+      
+      let brevoApiKey = null;
+      let mailFrom = null;
 
-      if (!brevoApiKey) {
-        await pool.query(
-          `UPDATE notificationlog SET status = 'SKIPPED', error = ? WHERE id = ?`,
-          ['Brevo API not configured on server (BREVO_API_KEY missing)', logId]
-        );
-        console.warn(`⚠️  EMAIL to ${to} SKIPPED — BREVO_API_KEY not set in environment.`);
-        return { success: false, skipped: true, reason: 'Brevo API not configured on server. Set BREVO_API_KEY environment variable.' };
+      if (adminId) {
+        const tenantBrevoCreds = await BrevoCredentialResolver.getTenantBrevoCredentials(adminId);
+        if (!tenantBrevoCreds) {
+          await pool.query(
+            `UPDATE notificationlog SET status = 'SKIPPED', error = ? WHERE id = ?`,
+            ['Tenant email service is not configured. Please configure Brevo in Settings.', logId]
+          );
+          console.warn(`⚠️  EMAIL to ${to} SKIPPED — Tenant Brevo API key not set.`);
+          return { success: false, skipped: true, reason: 'Tenant email service is not configured. Please configure Brevo in Settings.' };
+        }
+        brevoApiKey = tenantBrevoCreds.apiKey;
+        mailFrom = `${tenantBrevoCreds.senderName} <${tenantBrevoCreds.senderEmail}>`;
+      } else {
+        const platformCreds = BrevoCredentialResolver.getSuperAdminBrevoCredentials();
+        if (!platformCreds.apiKey) {
+           await pool.query(
+             `UPDATE notificationlog SET status = 'SKIPPED', error = ? WHERE id = ?`,
+             ['Platform BREVO_API_KEY missing', logId]
+           );
+           return { success: false, skipped: true, reason: 'Platform Brevo API not configured.' };
+        }
+        brevoApiKey = platformCreds.apiKey;
+        mailFrom = `${platformCreds.senderName} <${platformCreds.senderEmail}>`;
       }
 
-      const mailFrom = process.env.MAIL_FROM || `GymSoft <noreply@gymsoftware.space>`;
+      const clean = (val) => (val || "").toString().replace(/['"]/g, '').trim();
+      brevoApiKey = clean(brevoApiKey);
+
       let senderName = "GymSoft";
       let senderEmail = "noreply@gymsoftware.space";
       const match = mailFrom.match(/(.*)<(.*)>/);
