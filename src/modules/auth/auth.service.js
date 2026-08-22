@@ -593,11 +593,11 @@ export const modifyUser = async (id, data = {}, files) => { // Default to empty 
     updatedData.branchId = data.branchId;
     updatedFields.push('branchId');
   }
-  if (data?.gymName) {
+  if (data?.gymName !== undefined) {
     updatedData.gymName = data.gymName;
     updatedFields.push('gymName');
   }
-  if (data?.address) {
+  if (data?.address !== undefined) {
     updatedData.address = data.address;
     updatedFields.push('address');
   }
@@ -634,7 +634,7 @@ export const modifyUser = async (id, data = {}, files) => { // Default to empty 
     updatedFields.push('profileImage');
   }
 
-  if (data?.gstNumber) {
+  if (data?.gstNumber !== undefined) {
   updatedData.gstNumber = data.gstNumber;
   updatedFields.push('gstNumber');
 }
@@ -644,7 +644,7 @@ if (data?.tax !== undefined) {
   updatedFields.push('tax');
 }
 
-if (data?.gymAddress) {
+if (data?.gymAddress !== undefined) {
   updatedData.gymAddress = data.gymAddress;
   updatedFields.push('gymAddress');
 }
