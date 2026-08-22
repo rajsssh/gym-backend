@@ -1,7 +1,6 @@
 import PDFDocument from "pdfkit";
 import { getInvoiceDataService } from "./invoice.service.js";
 import { numberToWords } from "../../utils/numberToWords.js";
-import axios from "axios";
 
 export const generateInvoicePdf = async (req, res, next) => {
   try {
@@ -66,8 +65,11 @@ export const generateInvoicePdf = async (req, res, next) => {
     // Logo box (placeholder - logo can be added if available)
     if (payment.settingsLogo) {
       try {
-        const response = await axios.get(payment.settingsLogo, { responseType: 'arraybuffer' });
-        doc.image(response.data, logoBoxX, logoBoxY, { width: logoBoxSize, height: logoBoxSize, fit: [logoBoxSize, logoBoxSize] });
+        const response = await fetch(payment.settingsLogo);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        doc.image(buffer, logoBoxX, logoBoxY, { width: logoBoxSize, height: logoBoxSize, fit: [logoBoxSize, logoBoxSize] });
       } catch (e) {
         console.error("Failed to load invoice logo", e.message);
         doc
