@@ -255,7 +255,11 @@ export const createMemberService = async (data) => {
   let adminEmail = null;
   let adminPhone = null;
   if (adminId) {
-    const [adminRows] = await pool.query("SELECT email, phone, gymName FROM user WHERE id = ?", [adminId]);
+    const [adminRows] = await pool.query(`
+      SELECT u.email, u.phone, COALESCE(u.gymName, s.gym_name, 'GymSoft') as gymName 
+      FROM user u 
+      LEFT JOIN app_settings s ON s.adminId = u.id 
+      WHERE u.id = ?`, [adminId]);
     if (adminRows.length > 0) {
       gymName = adminRows[0].gymName || "GymSoft";
       adminEmail = adminRows[0].email;
