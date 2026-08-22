@@ -1,6 +1,7 @@
 import PDFDocument from "pdfkit";
 import { getInvoiceDataService } from "./invoice.service.js";
 import { numberToWords } from "../../utils/numberToWords.js";
+import axios from "axios";
 
 export const generateInvoicePdf = async (req, res, next) => {
   try {
@@ -63,11 +64,25 @@ export const generateInvoicePdf = async (req, res, next) => {
     const invoiceTitleX = 450;
     
     // Logo box (placeholder - logo can be added if available)
-    doc
-      .lineWidth(1)
-      .strokeColor('#d4af37')
-      .rect(logoBoxX, logoBoxY, logoBoxSize, logoBoxSize)
-      .stroke();
+    if (payment.settingsLogo) {
+      try {
+        const response = await axios.get(payment.settingsLogo, { responseType: 'arraybuffer' });
+        doc.image(response.data, logoBoxX, logoBoxY, { width: logoBoxSize, height: logoBoxSize, fit: [logoBoxSize, logoBoxSize] });
+      } catch (e) {
+        console.error("Failed to load invoice logo", e.message);
+        doc
+          .lineWidth(1)
+          .strokeColor('#d4af37')
+          .rect(logoBoxX, logoBoxY, logoBoxSize, logoBoxSize)
+          .stroke();
+      }
+    } else {
+      doc
+        .lineWidth(1)
+        .strokeColor('#d4af37')
+        .rect(logoBoxX, logoBoxY, logoBoxSize, logoBoxSize)
+        .stroke();
+    }
     
     // Company Name
     doc

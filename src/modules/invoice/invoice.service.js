@@ -33,7 +33,8 @@ export const getInvoiceDataService = async (paymentId) => {
         u.tax AS adminTax,
         u.phone AS adminPhone,
         u.email AS adminEmail,
-        s.gym_name AS settingsGymName
+        s.gym_name AS settingsGymName,
+        s.logo AS settingsLogo
      FROM Payment p
      LEFT JOIN Member m ON m.id = p.memberId
      LEFT JOIN Branch b ON b.id = m.branchId
