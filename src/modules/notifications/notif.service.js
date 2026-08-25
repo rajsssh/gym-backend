@@ -628,22 +628,55 @@ export const sendPersonalNotificationService = async ({ memberId, memberUserId, 
   // 1. Save to notificationlog (this is what the Bell Icon reads)
   const notifMessage = `[${category}] ${message}`;
   
-  // Get member info for email/whatsapp (optional future use)
+  // Get member info to find associated user account
   const [memberRows] = await pool.query(
-    `SELECT id, fullName, email, phone FROM member WHERE id = ?`, 
+    `SELECT id, userId, adminId, fullName, email, phone FROM member WHERE id = ?`, 
     [memberId]
   );
 
   if (!memberRows.length) {
     throw new Error("Member not found");
   }
+  
+  const member = memberRows[0];
+  const targetUserId = member.userId;
 
-  // 2. Insert into notificationlog for Bell Icon
-  await pool.query(
+  // Insert into notificationlog for Bell Icon (Using UNREAD so it shows up in tray)
+  // Also saving to userId if it exists, otherwise email fallback.
+  const [logResult] = await pool.query(
     `INSERT INTO notificationlog (type, \`to\`, message, memberId, status, createdAt)
      VALUES (?, ?, ?, ?, ?, NOW())`,
-    ["APP_PUSH", memberRows[0].email || "member", notifMessage, memberId, "SENT"]
+    ["IN_APP", targetUserId ? targetUserId.toString() : (member.email || "member"), notifMessage, memberId, "UNREAD"]
   );
+
+  // If member has a user account, create an app_notification and emit socket
+  if (targetUserId) {
+    try {
+      await createAppNotification({
+        tenantId: member.adminId || null,
+        senderId: sentBy || null,
+        receiverId: targetUserId,
+        receiverRole: 'Member',
+        type: 'MEMBER_MESSAGE',
+        title: category,
+        message: message,
+        referenceType: 'PERSONAL_MESSAGE',
+        referenceId: memberId || null,
+        priority: 'NORMAL'
+      });
+    } catch (err) {
+      console.error("Failed to create app notification for personal message:", err);
+      // Fallback emit
+      emitToUser(targetUserId, "new_notification", {
+        id: logResult.insertId,
+        type: "IN_APP",
+        to: targetUserId.toString(),
+        message: notifMessage,
+        status: "UNREAD",
+        createdAt: new Date().toISOString(),
+      });
+    }
+  }
 
   // 3. Also log in personal_notifications table for history
   await pool.query(
