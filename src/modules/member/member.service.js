@@ -1170,11 +1170,23 @@ export const getMembersByAdminIdService = async (adminId) => {
     member.assignedPlans = plans;
 
     // Calculate member status based on ALL plans
-    const hasActivePlan = plans.some(p =>
-      p.computedStatus === 'Active' && p.remainingDays > 0
-    );
+    let hasActivePlan = false;
+    if (plans.length > 0) {
+      hasActivePlan = plans.some(p => p.computedStatus === 'Active' && p.remainingDays > 0);
+    } else if (member.membershipTo) {
+      // Fallback for older members without member_plan_assignment entries
+      const remainingDays = Math.ceil((new Date(member.membershipTo) - new Date()) / (1000 * 60 * 60 * 24));
+      hasActivePlan = remainingDays > 0;
+    }
 
-    member.status = hasActivePlan ? 'Active' : 'Inactive';
+    const newStatus = hasActivePlan ? 'Active' : 'Inactive';
+    
+    // Auto-update DB if it differs to ensure consistency across other APIs
+    if (member.status !== newStatus) {
+      pool.query('UPDATE member SET status = ? WHERE id = ?', [newStatus, member.id]).catch(err => console.error("Auto-update member status err:", err));
+    }
+
+    member.status = newStatus;
 
     // Get maximum remaining days from all active plans
     const activePlans = plans.filter(p => p.computedStatus === 'Active');
