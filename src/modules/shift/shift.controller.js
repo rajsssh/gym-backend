@@ -2,6 +2,7 @@
 
 import {
   createShiftService,
+  createShiftBulkService,
   getAllShiftsService,
   getShiftByIdService,
   updateShiftService,
@@ -18,6 +19,7 @@ export const createShift = async (req, res) => {
       staffIds,
       branchId = null,        // ✅ OPTIONAL NOW
       shiftDate,
+      shiftDates,
       startTime,
       endTime,
       shiftType,
@@ -25,7 +27,7 @@ export const createShift = async (req, res) => {
     } = req.body;
 
     /* REQUIRED VALIDATIONS (branchId REMOVED) */
-    if (!staffIds || !shiftDate || !startTime || !endTime || !shiftType) {
+    if (!staffIds || (!shiftDate && (!shiftDates || shiftDates.length === 0)) || !startTime || !endTime || !shiftType) {
       return res.status(400).json({
         success: false,
         message: "Please fill all required fields"
@@ -37,22 +39,41 @@ export const createShift = async (req, res) => {
       staffIds = staffIds.join(",");
     }
 
-    const shift = await createShiftService({
-      staffIds,
-      branchId,              // ✅ can be null
-      shiftDate,
-      startTime,
-      endTime,
-      shiftType,
-      description,
-      createdById
-    });
+    if (shiftDates && Array.isArray(shiftDates) && shiftDates.length > 0) {
+      const shift = await createShiftBulkService({
+        staffIds,
+        branchId,
+        shiftDates,
+        startTime,
+        endTime,
+        shiftType,
+        description,
+        createdById
+      });
 
-    return res.status(201).json({
-      success: true,
-      message: "Shift created successfully!",
-      data: shift
-    });
+      return res.status(201).json({
+        success: true,
+        message: "Shifts created successfully!",
+        data: shift
+      });
+    } else {
+      const shift = await createShiftService({
+        staffIds,
+        branchId,              // ✅ can be null
+        shiftDate,
+        startTime,
+        endTime,
+        shiftType,
+        description,
+        createdById
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "Shift created successfully!",
+        data: shift
+      });
+    }
 
   } catch (error) {
     return res.status(500).json({

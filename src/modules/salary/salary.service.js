@@ -254,7 +254,7 @@ export const updateSalaryService = async (salaryId, data) => {
     salaryId, // 🔥 IMPORTANT: now updating by salaryId
   ]);
 
-  return { salaryId, ...data, netPay };
+  return { ...data, netPay };
 };
 
 // ===== GET BY STAFF ID =====

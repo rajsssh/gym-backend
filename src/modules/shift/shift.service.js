@@ -61,6 +61,45 @@ Time: ${startTime} - ${endTime}`;
 
   return newShift;
 };
+
+export const createShiftBulkService = async (data) => {
+  const { staffIds, branchId, shiftDates, startTime, endTime, shiftType, description, createdById } = data;
+
+  const values = shiftDates.map(date => [staffIds, branchId, date, startTime, endTime, shiftType, description || null, 'Pending', createdById]);
+  
+  const [result] = await pool.query(
+    `INSERT INTO shifts (staffIds, branchId, shiftDate, startTime, endTime, shiftType, description, status, createdById)
+     VALUES ?`,
+    [values]
+  );
+
+  // Notification Logic - Send ONLY ONE notification for the whole range
+  if (staffIds) {
+    const idsArray = staffIds.toString().split(",");
+    if (idsArray.length > 0) {
+      const placeholders = idsArray.map(() => "?").join(",");
+      const [staffRows] = await pool.query(`SELECT userId FROM staff WHERE id IN (${placeholders}) OR userId IN (${placeholders})`, [...idsArray, ...idsArray]);
+      
+      const msg = `New Shifts Assigned
+Type: ${shiftType}
+Dates: ${shiftDates[0]} to ${shiftDates[shiftDates.length - 1]}
+Time: ${startTime} - ${endTime}`;
+
+      for (let s of staffRows) {
+        if (s.userId) {
+          await sendAppNotification(s.userId, msg, {
+            title: "New Shifts Assigned",
+            sender_id: createdById,
+            reference_type: "SHIFT",
+            reference_id: result.insertId
+          });
+        }
+      }
+    }
+  }
+  return { success: true, count: shiftDates.length };
+};
+
 export const getAllShiftsService = async (adminId) => {
   const [rows] = await pool.query(
     `
