@@ -151,7 +151,7 @@ export const getMemberWorkoutPlanService = async (memberIdParam) => {
   // 2. Query direct assignments in workoutplanassignment
   const [assignments] = await pool.query(
     `SELECT a.id AS assignmentId, w.id AS workoutPlanId, w.title, w.notes,
-            e.id AS exerciseId, e.name AS exerciseName, e.reps, e.sets, e.duration
+            e.id AS exerciseId, e.name AS exerciseName, e.reps, e.sets, e.duration, e.notes AS exerciseNotes
      FROM workoutplanassignment a
      JOIN workoutplan w ON a.workoutPlanId = w.id
      LEFT JOIN workoutexercise e ON w.id = e.workoutPlanId
@@ -172,7 +172,8 @@ export const getMemberWorkoutPlanService = async (memberIdParam) => {
           name: a.exerciseName,
           reps: a.reps,
           sets: a.sets,
-          duration: a.duration
+          duration: a.duration,
+          notes: a.exerciseNotes
         });
       }
     });
