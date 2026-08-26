@@ -108,7 +108,8 @@ export const submitPublicPayment = async (req, res, next) => {
       paymentMode, transactionId, paymentProofImage 
     } = req.body;
     
-    const paymentStatus = "Pending";
+    const isCash = paymentMode === "Cash";
+    const paymentStatus = isCash ? "Completed" : "Pending";
     
     // createMemberService handles user creation, member creation, plan assignment, and payment insertion
     const memberResult = await createMemberService({
@@ -128,7 +129,11 @@ export const submitPublicPayment = async (req, res, next) => {
     try {
       const io = getIO();
       if (io) {
-        io.emit(`admin_${adminId}`, "new_payment_submitted", { message: "New payment pending verification from " + fullName });
+        if (isCash) {
+          io.emit(`admin_${adminId}`, "new_payment_submitted", { message: `${fullName} has purchased a new plan via Cash.` });
+        } else {
+          io.emit(`admin_${adminId}`, "new_payment_submitted", { message: `New payment pending verification from ${fullName}` });
+        }
       }
     } catch(e) {}
     

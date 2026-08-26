@@ -143,13 +143,12 @@ export const memberCheckIn = async (req, res, next) => {
       }
     }
 
-    // 🔁 Prevent multiple open check-ins same day
+    // 🔁 Prevent multiple check-ins same day
     const [existing] = await pool.query(
       `
       SELECT id FROM memberattendance
       WHERE memberId = ?
         AND DATE(checkIn) = CURDATE()
-        AND checkOut IS NULL
       `,
       [memberId]
     );
