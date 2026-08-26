@@ -328,6 +328,7 @@ export const loginUser = async ({ email, password, bypassPassword = false }) => 
 
   let user = null;
   let isPlanExpired = false;
+  let isAccountInactive = false;
 
   // Since emails can be duplicated across tenants, we must find the first one that matches the password.
   // We order by id DESC to prefer the most recently created account if passwords collide.
@@ -335,19 +336,45 @@ export const loginUser = async ({ email, password, bypassPassword = false }) => 
     const match = bypassPassword || await bcrypt.compare(password, row.password);
     if (match) {
       const normStatus = (row.status || '').toLowerCase().trim();
-      if (normStatus === 'inactive' || row.trialStatus === 'Expired') {
+      
+      // 1) Block "Inactive" users completely
+      if (normStatus === 'inactive') {
         if (!user) {
           user = row;
+          user.isAccountInactive = true;
+        }
+        continue;
+      }
+
+      // 2) Check if plan is expired
+      let adminPlanExpired = false;
+      if (row.trialStatus === 'Expired') {
+        adminPlanExpired = true;
+      } else if ((row.roleId == 2 || (row.roleName && row.roleName.toUpperCase() === 'ADMIN')) && row.licenseExpiryDate) {
+        if (new Date(row.licenseExpiryDate) < new Date()) {
+          adminPlanExpired = true;
+        }
+      }
+
+      if (adminPlanExpired) {
+        if (!user || user.isAccountInactive) {
+          user = row;
+          user.isAccountInactive = false;
           isPlanExpired = true;
         }
-        continue; // Keep looking for an active account with this password
+        continue; 
       }
       
-      // Found a matching, active account
+      // Found a matching, active account with active plan
       user = row;
+      user.isAccountInactive = false;
       isPlanExpired = false;
       break;
     }
+  }
+
+  if (user && user.isAccountInactive) {
+    throw { status: 403, message: "Your account has been deactivated. Please contact support." };
   }
 
   if (!user) {
