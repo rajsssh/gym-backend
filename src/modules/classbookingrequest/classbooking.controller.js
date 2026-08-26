@@ -151,47 +151,78 @@ export const createBookingRequest = async (req, res) => {
     }
 
     /* -------------------------
-       5️⃣ CREATE BOOKING REQUEST
+       5️⃣ CREATE PAYMENT & PLAN ASSIGNMENT (Replacing booking_requests logic for payments)
     ------------------------- */
-    const [bookingResult] = await connection.query(
-      `
-      INSERT INTO booking_requests
-        (adminId, userId, memberId, planId, price, branchId, upiId, paymentMode, paymentProofImage, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
-      `,
+    const isCash = paymentMode === "Cash";
+    const finalStatus = isCash ? "Approved" : "Pending";
+    const planStatus = isCash ? "Active" : "Pending";
+
+    // 1. Insert Payment
+    const invoiceNo = "INV-" + Date.now() + "-" + Math.floor(Math.random() * 999);
+    const [paymentResult] = await connection.query(
+      `INSERT INTO payment (memberId, planId, amount, invoiceNo, paymentDate, paymentMode, transactionId, paymentProofImage, status)
+       VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?)`,
       [
-        adminId,
-        targetUserId,
         targetMemberId,
         planId,
-        price,
-        branchId,
-        upiId,
+        price || plan.price,
+        invoiceNo,
         paymentMode,
-        paymentProofImage
+        upiId || null,
+        paymentProofImage || null,
+        finalStatus
+      ]
+    );
+
+    // 2. Insert Plan Assignment
+    const planStartDate = new Date();
+    const planEndDate = new Date(planStartDate);
+    planEndDate.setDate(planEndDate.getDate() + Number(plan.validityDays || 30));
+
+    await connection.query(
+      `INSERT INTO member_plan_assignment 
+        (memberId, planId, membershipFrom, membershipTo, paymentMode, amountPaid, status, assignedBy, assignedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [
+        targetMemberId,
+        planId,
+        planStartDate,
+        planEndDate,
+        paymentMode,
+        price || plan.price,
+        planStatus,
+        adminId || null
       ]
     );
 
     await connection.commit();
 
     /* -------------------------
-       5️⃣ EMIT SOCKET & EMAIL NOTIFICATION TO ADMIN
+       6️⃣ EMIT SOCKET & EMAIL NOTIFICATION TO ADMIN & MEMBER
     ------------------------- */
     try {
-      await sendAppNotification(adminId, `New plan purchase request from ${resolvedFullName || phone} for ${plan.name}`, {
-        title: "New Plan Booking Request",
-        reference_type: "booking_request",
-        reference_id: bookingResult.insertId
+      await sendAppNotification(adminId, `New ${isCash ? 'Cash' : 'Online'} plan purchase from ${resolvedFullName || phone} for ${plan.name}`, {
+        title: "New Plan Purchase",
+        reference_type: "PAYMENT",
+        reference_id: paymentResult.insertId
       });
 
+      if (targetUserId) {
+        await sendAppNotification(targetUserId, `Your plan purchase for ${plan.name} has been submitted successfully.${!isCash ? ' It is pending admin approval.' : ''}`, {
+          title: "Plan Purchase Submitted",
+          reference_type: "PAYMENT",
+          reference_id: paymentResult.insertId
+        });
+      }
+
       const [[adminRow]] = await connection.query(`SELECT email FROM user WHERE id = ?`, [adminId]);
-      if (adminRow && adminRow.email) {
+      if (adminRow && adminRow.email && !isCash) {
         await dispatchNotification({
-          category: "booking_request",
+          category: "payment",
           toEmail: adminRow.email,
           toUserId: adminId,
-          subject: "New Plan Booking Request Received",
-          message: `Hello Admin,\n\nYou have received a new plan purchase request from ${resolvedFullName || phone} for the plan "${plan.name}".\n\nPlease log in to the admin dashboard to review and approve the request.`,
+          subject: "New Plan Payment Received",
+          message: `Hello Admin,\n\nYou have received a new online payment from ${resolvedFullName || phone} for the plan "${plan.name}".\n\nPlease log in to the admin dashboard (Payments Menu) to verify and approve the payment to activate the plan.`,
           isSystemEvent: false,
           adminIdForCredits: adminId
         });
@@ -202,23 +233,20 @@ export const createBookingRequest = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Booking request submitted successfully",
+      message: isCash ? "Plan activated successfully" : "Payment submitted successfully. Pending verification.",
       data: {
-        bookingRequestId: bookingResult.insertId,
+        paymentId: paymentResult.insertId,
         userId: targetUserId,
         userName: resolvedFullName,
-        phone,
-        email,
         planName: plan.name,
-        price,
-        bookingStatus: "pending",
-        userStatus: isNewUser ? "Inactive" : "Active (Existing)"
+        bookingStatus: finalStatus,
+        userStatus: isNewUser ? "Inactive" : "Active"
       }
     });
 
   } catch (err) {
     if (connection) await connection.rollback();
-    console.error("❌ Create Booking Error:", err);
+    console.error("❌ Create Booking/Payment Error:", err);
 
     return res.status(500).json({
       success: false,

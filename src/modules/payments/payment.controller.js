@@ -153,6 +153,16 @@ export const verifyManualPayment = async (req, res, next) => {
       "UPDATE payment SET status = ?, rejectionRemarks = ? WHERE id = ?",
       [newStatus, rejectionRemarks || null, paymentId]
     );
+
+    if (newStatus === "Approved") {
+      const [[payment]] = await pool.query("SELECT memberId, planId FROM payment WHERE id = ?", [paymentId]);
+      if (payment) {
+        await pool.query(
+          "UPDATE member_plan_assignment SET status = 'Active' WHERE memberId = ? AND planId = ? AND status = 'Pending'",
+          [payment.memberId, payment.planId]
+        );
+      }
+    }
     
     res.json({ success: true, message: `Payment ${newStatus} successfully.` });
   } catch (err) {

@@ -1216,7 +1216,7 @@ const recentActivitiesQuery = `
 
   (
     SELECT 
-      CONCAT('Class booking by Member ID ', memberId) AS activity,
+      CONCAT('Class booking by ', COALESCE(userName, CONCAT('Member ID ', memberId))) AS activity,
       CONVERT_TZ(createdAt, '+00:00', '+05:30') AS time,
       'class_booking' AS type
     FROM booking_requests
