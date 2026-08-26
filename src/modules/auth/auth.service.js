@@ -1216,11 +1216,12 @@ const recentActivitiesQuery = `
 
   (
     SELECT 
-      CONCAT('Class booking by ', COALESCE(userName, CONCAT('Member ID ', memberId))) AS activity,
-      CONVERT_TZ(createdAt, '+00:00', '+05:30') AS time,
+      CONCAT('Class booking by ', COALESCE(u.fullName, CONCAT('Member ID ', br.memberId))) AS activity,
+      CONVERT_TZ(br.createdAt, '+00:00', '+05:30') AS time,
       'class_booking' AS type
-    FROM booking_requests
-    WHERE adminId = ?
+    FROM booking_requests br
+    LEFT JOIN user u ON u.id = br.userId
+    WHERE br.adminId = ?
   )
 
   UNION ALL
