@@ -142,6 +142,25 @@ export const memberCheckIn = async (req, res, next) => {
         });
       }
     }
+    
+    // ✅ Block member check-in if they have no active plans
+    if (isMember) {
+      const [activePlans] = await pool.query(
+        `SELECT id FROM member_plan_assignment 
+         WHERE memberId = ? 
+           AND status = 'Active' 
+           AND membershipTo >= CURDATE()
+         LIMIT 1`,
+        [memberId]
+      );
+      
+      if (activePlans.length === 0) {
+        return res.status(403).json({
+          success: false,
+          message: "Active membership plan required to mark attendance.",
+        });
+      }
+    }
 
     // 🔁 Prevent multiple check-ins same day
     let existingQuery = "";

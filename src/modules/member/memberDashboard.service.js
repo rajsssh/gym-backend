@@ -9,8 +9,8 @@ export const getMemberDashboardService = async (memberId, adminId) => {
     SELECT 
       m.id,
       m.fullName,
-      m.membershipFrom,
-      m.membershipTo,
+      (SELECT MIN(membershipFrom) FROM member_plan_assignment WHERE memberId = m.id AND status = 'Active') AS membershipFrom,
+      (SELECT MAX(membershipTo) FROM member_plan_assignment WHERE memberId = m.id AND status = 'Active') AS membershipTo,
       mp.name AS planName
     FROM member m
     LEFT JOIN memberplan mp ON mp.id = m.planId
