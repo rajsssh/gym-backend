@@ -1205,7 +1205,7 @@ const recentActivitiesQuery = `
   (
     SELECT 
       CONCAT('New member registration: ', fullName) AS activity,
-      CONVERT_TZ(joinDate, '+00:00', '+05:30') AS time,
+      joinDate AS time,
       'member' AS type
     FROM member
     WHERE adminId = ?
@@ -1217,7 +1217,7 @@ const recentActivitiesQuery = `
   (
     SELECT 
       CONCAT('Class booking by ', COALESCE(u.fullName, CONCAT('Member ID ', br.memberId))) AS activity,
-      CONVERT_TZ(br.createdAt, '+00:00', '+05:30') AS time,
+      br.createdAt AS time,
       'class_booking' AS type
     FROM booking_requests br
     LEFT JOIN user u ON u.id = br.userId
@@ -1229,7 +1229,7 @@ const recentActivitiesQuery = `
   (
     SELECT 
       CONCAT('Staff check-in: Staff ID ', sa.staffId) AS activity,
-      CONVERT_TZ(sa.checkIn, '+00:00', '+05:30') AS time,
+      sa.checkIn AS time,
       'staff_checkin' AS type
     FROM staffattendance sa
     JOIN staff s ON sa.staffId = s.id
@@ -1242,7 +1242,7 @@ const recentActivitiesQuery = `
   (
     SELECT 
       CONCAT('Member check-in: ', m.fullName) AS activity,
-      CONVERT_TZ(ma.checkIn, '+00:00', '+05:30') AS time,
+      ma.checkIn AS time,
       'member_checkin' AS type
     FROM memberattendance ma
     JOIN member m ON ma.memberId = m.id
@@ -1255,7 +1255,7 @@ const recentActivitiesQuery = `
   (
     SELECT 
       CONCAT('Member check-out: ', m.fullName) AS activity,
-      CONVERT_TZ(ma.checkOut, '+00:00', '+05:30') AS time,
+      ma.checkOut AS time,
       'member_checkout' AS type
     FROM memberattendance ma
     JOIN member m ON ma.memberId = m.id
