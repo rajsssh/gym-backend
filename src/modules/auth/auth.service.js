@@ -1190,15 +1190,14 @@ export const getAdminDashboardData = async (adminId, branchId = null, monthStr =
   // MEMBER GROWTH (Admin-wise)
   const memberGrowthQuery = `
     SELECT 
-      ${dateFormatMember} AS month,
+      ${dateFormatMember.replace(/createdAt/g, 'joinDate')} AS month,
       COUNT(*) AS count
-    FROM user
-    WHERE roleId = 4
-      AND adminId = ?
+    FROM member
+    WHERE adminId = ?
       ${bId ? "AND branchId = ?" : ""}
-      AND createdAt >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
-    GROUP BY ${groupByMember}
-    ORDER BY ${orderByMember};
+      AND joinDate >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
+    GROUP BY ${groupByMember.replace(/createdAt/g, 'joinDate')}
+    ORDER BY ${orderByMember.replace(/createdAt/g, 'joinDate')};
   `;
 
   // recent activity
@@ -1206,7 +1205,7 @@ const recentActivitiesQuery = `
   (
     SELECT 
       CONCAT('New member registration: ', fullName) AS activity,
-      joinDate AS time,
+      CONVERT_TZ(joinDate, '+00:00', '+05:30') AS time,
       'member' AS type
     FROM member
     WHERE adminId = ?
@@ -1218,11 +1217,10 @@ const recentActivitiesQuery = `
   (
     SELECT 
       CONCAT('Class booking by Member ID ', memberId) AS activity,
-      createdAt AS time,
+      CONVERT_TZ(createdAt, '+00:00', '+05:30') AS time,
       'class_booking' AS type
     FROM booking_requests
     WHERE adminId = ?
-    -- booking_requests doesn't have branchId directly in schema usually, ignoring filter
   )
 
   UNION ALL
@@ -1230,7 +1228,7 @@ const recentActivitiesQuery = `
   (
     SELECT 
       CONCAT('Staff check-in: Staff ID ', sa.staffId) AS activity,
-      sa.checkIn AS time,
+      CONVERT_TZ(sa.checkIn, '+00:00', '+05:30') AS time,
       'staff_checkin' AS type
     FROM staffattendance sa
     JOIN staff s ON sa.staffId = s.id
@@ -1243,7 +1241,7 @@ const recentActivitiesQuery = `
   (
     SELECT 
       CONCAT('Member check-in: ', m.fullName) AS activity,
-      ma.checkIn AS time,
+      CONVERT_TZ(ma.checkIn, '+00:00', '+05:30') AS time,
       'member_checkin' AS type
     FROM memberattendance ma
     JOIN member m ON ma.memberId = m.id
@@ -1256,7 +1254,7 @@ const recentActivitiesQuery = `
   (
     SELECT 
       CONCAT('Member check-out: ', m.fullName) AS activity,
-      ma.checkOut AS time,
+      CONVERT_TZ(ma.checkOut, '+00:00', '+05:30') AS time,
       'member_checkout' AS type
     FROM memberattendance ma
     JOIN member m ON ma.memberId = m.id
