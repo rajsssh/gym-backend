@@ -109,7 +109,7 @@ export const submitPublicPayment = async (req, res, next) => {
     } = req.body;
     
     const isCash = paymentMode === "Cash";
-    const paymentStatus = isCash ? "Completed" : "Pending";
+    const paymentStatus = isCash ? "Approved" : "Pending";
     
     // createMemberService handles user creation, member creation, plan assignment, and payment insertion
     const memberResult = await createMemberService({

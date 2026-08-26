@@ -144,19 +144,19 @@ export const memberCheckIn = async (req, res, next) => {
     }
 
     // 🔁 Prevent multiple check-ins same day
-    const [existing] = await pool.query(
-      `
-      SELECT id FROM memberattendance
-      WHERE memberId = ?
-        AND DATE(checkIn) = CURDATE()
-      `,
-      [memberId]
-    );
+    let existingQuery = "";
+    if (isMember) {
+      existingQuery = `SELECT id FROM memberattendance WHERE memberId = ? AND DATE(checkIn) = CURDATE()`;
+    } else {
+      existingQuery = `SELECT id FROM memberattendance WHERE staffId = ? AND DATE(checkIn) = CURDATE()`;
+    }
+
+    const [existing] = await pool.query(existingQuery, [memberId]);
 
     if (existing.length > 0) {
       return res.status(400).json({
         success: false,
-        message: isMember ? "Member already checked in" : "Already checked in",
+        message: isMember ? "Member already checked in today" : "Staff already checked in today",
       });
     }
 
@@ -460,16 +460,18 @@ export const getDailyAttendance = async (req, res, next) => {
       SELECT 
         a.id,
         a.memberId,
+        a.staffId,
         a.branchId,
         a.checkIn,
         a.checkOut,
         a.mode,
         a.status,
         a.notes,
-        m.fullName,
-        DATE(a.checkIn) AS attendanceDate
+        COALESCE(m.fullName, u.fullName, 'Unknown') AS fullName,
+        DATE(DATE_ADD(a.checkIn, INTERVAL '5:30' HOUR_MINUTE)) AS attendanceDate
       FROM memberattendance a
       LEFT JOIN member m ON m.id = a.memberId
+      LEFT JOIN user u ON u.id = a.staffId
       WHERE 1=1
     `;
 
@@ -483,17 +485,17 @@ export const getDailyAttendance = async (req, res, next) => {
     if (startDate && endDate) {
       const mysqlStart = new Date(startDate).toISOString().slice(0, 10);
       const mysqlEnd = new Date(endDate).toISOString().slice(0, 10);
-      sql += ` AND DATE(a.checkIn) BETWEEN ? AND ?`;
+      sql += ` AND DATE(DATE_ADD(a.checkIn, INTERVAL '5:30' HOUR_MINUTE)) BETWEEN ? AND ?`;
       params.push(mysqlStart, mysqlEnd);
     } else if (date) {
       const mysqlDate = new Date(date).toISOString().slice(0, 10);
-      sql += ` AND DATE(a.checkIn) = ?`;
+      sql += ` AND DATE(DATE_ADD(a.checkIn, INTERVAL '5:30' HOUR_MINUTE)) = ?`;
       params.push(mysqlDate);
     }
 
     if (search) {
-      sql += ` AND (m.fullName LIKE ? OR m.memberCode LIKE ?)`;
-      params.push(`%${search}%`, `%${search}%`);
+      sql += ` AND (m.fullName LIKE ? OR m.memberCode LIKE ? OR u.fullName LIKE ?)`;
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     sql += ` ORDER BY a.checkIn DESC`;
@@ -839,7 +841,7 @@ export const getAttendanceByAdminId = async (req, res, next) => {
         a.notes,
         sh.shiftType AS shift
       FROM memberattendance a
-      LEFT JOIN user u ON u.id = a.memberId
+      LEFT JOIN user u ON u.id = a.staffId
       LEFT JOIN role r ON r.id = u.roleId
       LEFT JOIN member m ON m.id = a.memberId
       LEFT JOIN user u_member ON u_member.id = m.userId
@@ -853,11 +855,17 @@ export const getAttendanceByAdminId = async (req, res, next) => {
 
     const params = [adminId, adminId, adminId];
 
+    if (category === "member") {
+      sql += ` AND a.memberId IS NOT NULL`;
+    } else if (category === "staff") {
+      sql += ` AND a.staffId IS NOT NULL`;
+    }
+
     if (date) {
-      sql += ` AND DATE(a.checkIn) = ?`;
+      sql += ` AND DATE(DATE_ADD(a.checkIn, INTERVAL '5:30' HOUR_MINUTE)) = ?`;
       params.push(date.split('T')[0]);
     } else if (startDate && endDate) {
-      sql += ` AND DATE(a.checkIn) >= ? AND DATE(a.checkIn) <= ?`;
+      sql += ` AND DATE(DATE_ADD(a.checkIn, INTERVAL '5:30' HOUR_MINUTE)) >= ? AND DATE(DATE_ADD(a.checkIn, INTERVAL '5:30' HOUR_MINUTE)) <= ?`;
       params.push(startDate.split('T')[0], endDate.split('T')[0]);
     }
 
