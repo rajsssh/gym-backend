@@ -102,8 +102,9 @@ export const generateGeneralTrainerReportController = async (req, res) => {
 export const getReceptionReportForAdmin = async (req, res) => {
   try {
     const { adminId } = req.params;
+    const { fromDate, toDate } = req.query;
 
-    const report = await getReceptionReportService(adminId);
+    const report = await getReceptionReportService(adminId, fromDate, toDate);
 
     if (report.error) {
       return res.status(404).json({ success: false, message: report.error });
@@ -111,7 +112,7 @@ export const getReceptionReportForAdmin = async (req, res) => {
 
     return res.json({
       success: true,
-      ...report,
+      data: report,
     });
   } catch (error) {
     console.error("Reception Report Error:", error);

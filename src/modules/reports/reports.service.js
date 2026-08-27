@@ -580,158 +580,92 @@ export const generatePersonalTrainerReportService = async (adminId) => {
 //   };
 // };
 
-export const getReceptionReportService = async (adminId) => {
-  // 1️⃣ Fetch all branches of this admin
-  const [branches] = await pool.query(
-    `SELECT id FROM branch WHERE adminId = ?`,
-    [adminId]
-  );
-  const branchIds = branches.map(b => b.id);
+export const getReceptionReportService = async (adminId, fromDate, toDate) => {
+  try {
+    const dateClause = fromDate && toDate
+      ? `AND DATE(p.paymentDate) BETWEEN '${fromDate}' AND '${toDate}'`
+      : '';
 
-  // ---------------- WEEKLY ATTENDANCE (ALL BRANCHES) ----------------
-  const [members] = await pool.query(
-    `SELECT userId FROM member WHERE adminId = ?`,
-    [adminId]
-  );
+    // 1️⃣ Get sales (payments) statistics for receptionists
+    const [bookingStats] = await pool.query(
+      `SELECT 
+        COUNT(*) AS totalBookings,
+        SUM(p.amount) AS totalRevenue,
+        AVG(p.amount) AS avgTicket,
+        SUM(CASE WHEN p.status = 'Approved' THEN 1 ELSE 0 END) AS completed,
+        SUM(CASE WHEN p.status = 'Rejected' THEN 1 ELSE 0 END) AS cancelled,
+        SUM(CASE WHEN p.status = 'Pending' THEN 1 ELSE 0 END) AS booked
+      FROM payment p
+      JOIN member m ON p.memberId = m.id
+      WHERE m.adminId = ? ${dateClause} 
+        AND LOWER(p.collectedByRole) = 'receptionist'`,
+      [adminId]
+    );
 
-  if (members.length === 0) {
-    return { error: "No members found for this admin" };
+    // 2️⃣ Bookings (Payments) by day
+    const [bookingsByDay] = await pool.query(
+      `SELECT 
+        DATE(p.paymentDate) AS date,
+        COUNT(*) AS count
+      FROM payment p
+      JOIN member m ON p.memberId = m.id
+      WHERE m.adminId = ? ${dateClause}
+        AND LOWER(p.collectedByRole) = 'receptionist'
+      GROUP BY DATE(p.paymentDate)
+      ORDER BY date ASC`,
+      [adminId]
+    );
+
+    // 3️⃣ Booking (Payment) status distribution
+    const [bookingStatus] = await pool.query(
+      `SELECT 
+        IFNULL(p.status, 'Unknown') AS bookingStatus,
+        COUNT(*) AS count
+      FROM payment p
+      JOIN member m ON p.memberId = m.id
+      WHERE m.adminId = ? ${dateClause}
+        AND LOWER(p.collectedByRole) = 'receptionist'
+      GROUP BY p.status`,
+      [adminId]
+    );
+
+    // 4️⃣ Transactions list for UI
+    const [transactions] = await pool.query(
+      `SELECT 
+        p.paymentDate AS date,
+        IFNULL(p.collectedByName, 'Receptionist') AS trainerName,
+        IFNULL(u.fullName, 'N/A') AS memberName,
+        'Payment Collection' AS type,
+        p.paymentDate AS time,
+        IFNULL(p.status, 'N/A') AS status
+      FROM payment p
+      JOIN member m ON p.memberId = m.id
+      JOIN user u ON m.userId = u.id
+      WHERE m.adminId = ? ${dateClause} 
+        AND LOWER(p.collectedByRole) = 'receptionist'
+      ORDER BY p.paymentDate DESC`,
+      [adminId]
+    );
+
+    const formattedStats = {
+      totalBookings: bookingStats[0].totalBookings || 0,
+      totalRevenue: bookingStats[0].totalRevenue || 0,
+      avgTicket: bookingStats[0].avgTicket || 0,
+      completed: bookingStats[0].completed || 0,
+      cancelled: bookingStats[0].cancelled || 0,
+      booked: bookingStats[0].booked || 0,
+    };
+
+    return {
+      stats: formattedStats,
+      bookingsByDay,
+      bookingStatus,
+      transactions,
+    };
+  } catch (error) {
+    console.error("Reception Sales Report Error:", error);
+    return { error: "Failed to generate receptionist sales report" };
   }
-
-  const memberUserIds = members.map((m) => m.userId);
-
-  const [weekly] = await pool.query(
-    `
-      SELECT 
-          DAYNAME(ma.checkIn) AS day,
-          COUNT(*) AS count,
-          DAYOFWEEK(ma.checkIn) AS sortOrder
-      FROM memberattendance ma
-      WHERE DATE(ma.checkIn) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-        AND ma.memberId IN (?)
-      GROUP BY day, sortOrder
-      ORDER BY sortOrder
-      `,
-    [memberUserIds]
-  );
-
-  // ---------------- TODAY SUMMARY (ALL BRANCHES) ----------------
-
-  const [[present]] = await pool.query(
-    `SELECT COUNT(*) AS count 
-       FROM memberattendance ma
-       WHERE DATE(ma.checkIn)=CURDATE() 
-         AND ma.memberId IN (?)`,
-    [memberUserIds]
-  );
-
-  const [[active]] = await pool.query(
-    `SELECT COUNT(*) AS count 
-       FROM memberattendance ma
-       WHERE DATE(ma.checkIn)=CURDATE() 
-         AND ma.checkOut IS NULL
-         AND ma.memberId IN (?)`,
-    [memberUserIds]
-  );
-
-  const [[completed]] = await pool.query(
-    `SELECT COUNT(*) AS count 
-       FROM memberattendance ma
-       WHERE DATE(ma.checkIn)=CURDATE() 
-         AND ma.checkOut IS NOT NULL
-         AND ma.memberId IN (?)`,
-    [memberUserIds]
-  );
-
-  // TODAY CHECK-INS COUNT (ALL BRANCHES)
-  const [[todayCheckinsCount]] = await pool.query(
-    `
-      SELECT COUNT(*) AS count
-      FROM memberattendance ma
-      WHERE DATE(ma.checkIn) = CURDATE()
-        AND ma.memberId IN (?)
-      `,
-    [memberUserIds]
-  );
-
-  // ---------------- REVENUE ----------------
-  const [[revenue]] = await pool.query(
-    `SELECT SUM(p.amount) AS total
-   FROM payment p
-   JOIN member m ON p.memberId = m.id
-   WHERE m.adminId = ?`,
-    [adminId]
-  );
-
-  // ---------------- RECEPTIONIST LIST (ALL BRANCHES) ----------------
-  const [receptionists] = await pool.query(
-    `
-      SELECT s.id, s.userId, s.branchId
-      FROM staff s
-      WHERE s.adminId = ?
-      `,
-    [adminId]
-  );
-
-  let receptionistStats = [];
-
-  for (const r of receptionists) {
-    const { userId, branchId } = r;
-
-    // 3️⃣ Fetch receptionist's full name from the 'user' table using userId
-    const [[userDetails]] = await pool.query(
-      `SELECT fullName FROM user WHERE id = ?`,
-      [userId]
-    );
-
-    // 4️⃣ Fetch stats for each receptionist based on their userId
-    const [[totalCheckins]] = await pool.query(
-      `SELECT COUNT(*) AS count 
-     FROM memberattendance ma
-     WHERE ma.memberId = ?`,
-      [userId]
-    );
-
-    const [[activeMembers]] = await pool.query(
-      `SELECT COUNT(*) AS count 
-     FROM memberattendance ma
-     WHERE ma.memberId = ? AND ma.checkOut IS NULL`,
-      [userId]
-    );
-
-    const [[completedMembers]] = await pool.query(
-      `SELECT COUNT(*) AS count 
-     FROM memberattendance ma
-     WHERE ma.memberId = ? AND ma.checkOut IS NOT NULL`,
-      [userId]
-    );
-
-    // Push the receptionist stats with their name
-    receptionistStats.push({
-      receptionistId: r.id,
-      name: userDetails?.fullName || "N/A", // Fetch full name from user table
-      branchId,
-      totalCheckins: totalCheckins.count,
-      activeMembers: activeMembers.count,
-      completedMembers: completedMembers.count,
-      totalRevenue: revenue?.total || 0,
-    });
-  }
-
-  return {
-    branches: branchIds,
-    weeklyTrend: weekly,
-    todayCheckinsCount: todayCheckinsCount.count,
-    summary: {
-      present: present.count,
-      active: active.count,
-      completed: completed.count,
-    },
-    revenue: {
-      total: revenue?.total || 0,
-    },
-    receptionists: receptionistStats,
-  };
 };
 
 // export const getMemberAttendanceReportService = async (adminId) => {

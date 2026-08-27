@@ -67,7 +67,7 @@ export const createLog = async (req, res) => {
 
       // Notify Member
       if (member.userId) {
-        await sendTemplatedNotification({
+        sendTemplatedNotification({
           eventKey: 'PROGRESS_UPDATED',
           tenantId: member.adminId,
           receiverId: member.userId,
@@ -99,7 +99,7 @@ export const createLog = async (req, res) => {
         }
 
         if (trainerUser) {
-          await sendTemplatedNotification({
+          sendTemplatedNotification({
             eventKey: 'CLIENT_PROGRESS_UPDATED',
             tenantId: member.adminId,
             receiverId: trainerUser.id,
@@ -120,7 +120,7 @@ export const createLog = async (req, res) => {
 
       // Notify Admin
       if (admin && admin.id) {
-        await sendTemplatedNotification({
+        sendTemplatedNotification({
           eventKey: 'ADMIN_PROGRESS_UPDATED',
           tenantId: member.adminId,
           receiverId: admin.id,
