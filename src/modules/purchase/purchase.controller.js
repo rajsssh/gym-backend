@@ -102,24 +102,67 @@ export const verifyRazorpayPayment = async (req, res) => {
     // 1. Create the purchase record
     const purchase = await createPurchaseService(purchaseData);
 
-    // 2. Immediately approve it since payment is verified
-    // We mimic the updatePurchaseStatus logic but internally
-    const reqMock = { params: { id: purchase.id }, body: { status: "APPROVED" } };
-    let successData = purchase;
-    const resMock = {
-      json: (data) => { successData = data; },
-      status: (code) => resMock
-    };
-    
-    // We can just call updatePurchaseStatus with mock req/res, OR we just use the existing function
-    // Let's call updatePurchaseStatus directly. It takes (req, res, next).
-    await updatePurchaseStatus(reqMock, resMock, (err) => { throw err; });
+    if (purchaseData.isUpgrade) {
+      // Leave pending and notify SuperAdmin
+      try {
+        const [superAdmins] = await pool.query("SELECT id, email, phone FROM user WHERE roleId = 1 LIMIT 1");
+        
+        let currentPlanStr = "Current Plan";
+        const [existing] = await pool.query("SELECT planName FROM user WHERE email = ? LIMIT 1", [purchaseData.email]);
+        if (existing.length > 0 && existing[0].planName) {
+          currentPlanStr = existing[0].planName;
+        }
 
-    return res.status(200).json({ 
-      success: true, 
-      message: "Payment successful and plan activated!", 
-      data: successData 
-    });
+        if (superAdmins && superAdmins.length > 0) {
+          const superAdmin = superAdmins[0];
+          const dateStr = purchase.startDate ? new Date(purchase.startDate).toLocaleDateString('en-GB') : "N/A";
+          
+          await sendTemplatedNotification({
+            eventKey: 'PLAN_UPGRADE_REQUEST',
+            tenantId: superAdmin.id,
+            receiverId: superAdmin.id,
+            receiverRole: 'Superadmin',
+            receiverEmail: superAdmin.email,
+            receiverPhone: superAdmin.phone,
+            variables: {
+              AdminName: purchase.adminName || purchase.fullName || purchase.companyName || "Admin",
+              GymName: purchase.companyName || purchase.branchName || "Gym",
+              CurrentPlan: currentPlanStr,
+              RequestedPlan: purchase.selectedPlan || "N/A",
+              DateTime: dateStr
+            },
+            referenceType: 'SUBSCRIPTION',
+            referenceId: purchase.id?.toString(),
+            actionUrl: '/admin/subscription'
+          });
+        }
+      } catch (notifErr) {
+        console.error("Failed to send notification to Super Admin:", notifErr);
+      }
+      
+      return res.status(200).json({ 
+        success: true, 
+        message: "Payment successful. Request sent for admin approval.", 
+        data: purchase 
+      });
+
+    } else {
+      // Immediately approve it since payment is verified (Landing page purchase)
+      const reqMock = { params: { id: purchase.id }, body: { status: "APPROVED" } };
+      let successData = purchase;
+      const resMock = {
+        json: (data) => { successData = data; },
+        status: (code) => resMock
+      };
+      
+      await updatePurchaseStatus(reqMock, resMock, (err) => { throw err; });
+
+      return res.status(200).json({ 
+        success: true, 
+        message: "Payment successful and plan activated!", 
+        data: successData 
+      });
+    }
   } catch (err) {
     console.error("Razorpay Verify Error:", err);
     return res.status(500).json({ success: false, message: err.message });
@@ -189,8 +232,8 @@ export const createPurchase = async (req, res) => {
 
     const purchase = await createPurchaseService(data);
 
-    if (!data.isUpgrade) {
-      // Direct Purchase from Landing Page: Auto-Approve Free Trials & Direct Purchases
+    if (!data.isUpgrade || isTrialPlan) {
+      // Direct Purchase from Landing Page OR Free Trial: Auto-Approve Free Trials & Direct Purchases
       const reqMock = { params: { id: purchase.id }, body: { status: "APPROVED" } };
       let successData = purchase;
       const resMock = {
@@ -200,6 +243,43 @@ export const createPurchase = async (req, res) => {
       
       try {
         await updatePurchaseStatus(reqMock, resMock, (err) => { throw err; });
+        
+        // If it's an upgrade (dashboard), notify Super Admin about the free trial activation
+        if (data.isUpgrade) {
+          try {
+            const [superAdmins] = await pool.query("SELECT id, email, phone FROM user WHERE roleId = 1 LIMIT 1");
+            let currentPlanStr = "Current Plan";
+            const [existing] = await pool.query("SELECT planName FROM user WHERE email = ? LIMIT 1", [data.email]);
+            if (existing.length > 0 && existing[0].planName) {
+              currentPlanStr = existing[0].planName;
+            }
+            if (superAdmins && superAdmins.length > 0) {
+              const superAdmin = superAdmins[0];
+              const dateStr = purchase.startDate ? new Date(purchase.startDate).toLocaleDateString('en-GB') : "N/A";
+              await sendTemplatedNotification({
+                eventKey: 'PLAN_UPGRADE_REQUEST', 
+                tenantId: superAdmin.id,
+                receiverId: superAdmin.id,
+                receiverRole: 'Superadmin',
+                receiverEmail: superAdmin.email,
+                receiverPhone: superAdmin.phone,
+                variables: {
+                  AdminName: purchase.adminName || purchase.fullName || purchase.companyName || "Admin",
+                  GymName: purchase.companyName || purchase.branchName || "Gym",
+                  CurrentPlan: currentPlanStr,
+                  RequestedPlan: purchase.selectedPlan || "N/A",
+                  DateTime: dateStr
+                },
+                referenceType: 'SUBSCRIPTION',
+                referenceId: purchase.id?.toString(),
+                actionUrl: '/admin/subscription'
+              });
+            }
+          } catch (notifErr) {
+             console.error("Failed to send notification to Super Admin:", notifErr);
+          }
+        }
+
         return res.status(201).json({
           success: true,
           message: "Purchase successful and plan activated!",
@@ -211,7 +291,7 @@ export const createPurchase = async (req, res) => {
         return res.status(500).json({ success: false, message: "Auto-approval failed: " + autoApproveErr.message });
       }
     } else {
-      // Purchase from Admin Dashboard: Leave as Pending and Notify Super Admin
+      // Paid Purchase from Admin Dashboard: Leave as Pending and Notify Super Admin
       try {
         const [superAdmins] = await pool.query("SELECT id, email, phone FROM user WHERE roleId = 1 LIMIT 1");
         
